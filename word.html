@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>캐치마인드 제시어</title>
+<style>
+:root{--bg:#0b0718;--text:#f4f2ff;--muted:#aaa3cc;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 12px 24px;text-align:center;-webkit-user-select:none;user-select:none;min-height:100vh}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;max-width:560px}
+.game{font-size:14px;font-weight:800;color:var(--muted);text-align:left}
+.team{font-size:17px;font-weight:900;text-align:left}
+.time{font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;color:#fde68a;white-space:nowrap}
+.box{width:100%;max-width:560px;min-height:84px;border-radius:20px;border:2px solid var(--line);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:10px 14px;cursor:pointer}
+.word{font-size:clamp(34px,11vw,64px);font-weight:900;line-height:1.1;word-break:keep-all}
+.hidden .word{filter:blur(20px)}
+.new{animation:flash .6s}
+@keyframes flash{0%{background:#fde68a;color:#2b1600}100%{background:rgba(255,255,255,.06)}}
+/* 그림판: 큰 화면과 같은 4:3 비율 → 그린 그대로 큰 화면에 나옴 */
+.draw{width:100%;max-width:560px}
+.draw[hidden]{display:none}
+.cv{position:relative;width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:#fff;touch-action:none;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:8px}
+.sw{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.25);cursor:pointer}
+.sw.on{border-color:#fde68a;transform:scale(1.15)}
+.tb{font-family:inherit;font-size:13px;font-weight:800;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer;touch-action:manipulation}
+.tb.on{background:#fde68a;color:#2b1600}
+.tb.warn{border-color:rgba(248,113,113,.6);color:#fca5a5}
+.score{font-size:16px;font-weight:800;color:var(--muted)}
+.score b{color:#86efac;font-size:22px}
+.btns{display:flex;gap:10px;width:100%;max-width:560px}
+.btns button{flex:1;min-height:64px;border:0;border-radius:18px;font-family:inherit;font-size:24px;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btns .ok{background:linear-gradient(135deg,#4ade80,#16a34a);color:#052e16}
+.btns .ps{background:linear-gradient(135deg,#fdba74,#f97316);color:#2b1000}
+.btns button:active{transform:scale(.97)}
+.btns button:disabled{opacity:.35}
+.btns[hidden]{display:none}
+.msg{min-height:18px;font-size:14px;font-weight:700;color:#fde68a}
+.tip{font-size:13px;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="top"><div><div class="game" id="game">연결 중…</div><div class="team" id="team"></div></div><div class="time" id="time"></div></div>
+<div class="box" id="box"><div class="word" id="word">—</div></div>
+<div class="draw" id="draw" hidden>
+  <div class="cv" id="cv"><canvas id="canvas"></canvas></div>
+  <div class="tools" id="tools"></div>
+</div>
+<div class="score" id="score"></div>
+<div class="btns" id="btns" hidden><button class="ok" id="bOk" type="button">⭕ 정답</button><button class="ps" id="bPs" type="button">⏭ 패스</button></div>
+<div class="msg" id="msg"></div>
+<div class="tip" id="tip">캐치마인드 그리는 사람 전용 화면이에요. 여기 흰 판에 손가락으로 그리면 큰 화면에 그대로 나와요.<br>맞히면 ⭕ 정답, 어려우면 ⏭ 패스 — 큰 화면과 같이 움직여요.<br>🔁 한 문제가 끝나면 이 휴대폰을 다음 팀원에게 넘겨 주세요. 단어를 누르면 가리거나 보여줘요.</div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const H={'X-Game-Token':window.__GT||''};
+let hidden=false,lastKey='',remain=0,recv=0,paused=false,wseq=null,busy=false,pollT=null;
+const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+$('#box').addEventListener('click',()=>{hidden=!hidden;document.body.classList.toggle('hidden',hidden)});
+
+/* ---------- 그림판 (큰 화면 그림판과 같은 형식: 0~1 좌표 · 색 · 굵기 · 획 번호) ---------- */
+const PALETTE=['#111827','#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#8b5a2b'];
+const SIZES=[0.005,0.011,0.022],SIZE_LABEL=['가늘게','보통','굵게'];
+const pen={c:PALETTE[0],w:SIZES[1],erase:false};
+const cvBox=$('#cv'),canvas=$('#canvas'),ctx=canvas.getContext('2d');
+let segs=[],epoch=-1,fetching=false,want=null;
+function renderTools(){
+  $('#tools').innerHTML=PALETTE.map(c=>`<span class="sw${!pen.erase&&pen.c===c?' on':''}" style="background:${c}" data-col="${c}"></span>`).join('')
+    +SIZES.map((s,i)=>`<button class="tb${pen.w===s?' on':''}" data-sz="${s}" type="button">${SIZE_LABEL[i]}</button>`).join('')
+    +`<button class="tb${pen.erase?' on':''}" data-tool="erase" type="button">🧽 지우개</button><button class="tb" data-tool="undo" type="button">↶ 되돌리기</button><button class="tb warn" data-tool="clear" type="button">🗑 전체 지우기</button>`;
+}
+$('#tools').addEventListener('click',async e=>{
+  const sw=e.target.closest('[data-col]'),sz=e.target.closest('[data-sz]'),tb=e.target.closest('[data-tool]');
+  if(sw){pen.c=sw.dataset.col;pen.erase=false}else if(sz){pen.w=parseFloat(sz.dataset.sz)}
+  else if(tb){const k=tb.dataset.tool;if(k==='erase')pen.erase=!pen.erase;else{if(k==='clear'&&!confirm('그림을 모두 지울까요?'))return;await flush();await stroke({action:k});syncStrokes()}}
+  renderTools();
+});
+async function stroke(body){
+  try{const r=await fetch('/api/stroke',{method:'POST',cache:'no-store',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify(body)});
+    if(!r.ok){const j=await r.json().catch(()=>({}));$('#msg').textContent=j.error||'그림을 보내지 못했어요'}}
+  catch(e){$('#msg').textContent='연결이 끊겼어요. 잠시 뒤 다시 그려 주세요'}
+}
+function fitCanvas(){const r=cvBox.getBoundingClientRect();if(!r.width)return;const d=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.round(r.width*d),h=Math.round(r.height*d);if(w===canvas.width&&h===canvas.height)return;canvas.width=w;canvas.height=h;redrawAll()}
+function drawSeg(s){const W=canvas.width,Ht=canvas.height,er=s[4]==='E',sc=Math.min(W,Ht*4/3);ctx.strokeStyle=er?'#ffffff':s[4];ctx.lineWidth=Math.max(1,s[5]*sc*(er?2.4:1));ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(s[0]*W,s[1]*Ht);ctx.lineTo(s[2]*W,s[3]*Ht);ctx.stroke()}
+function redrawAll(){ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);segs.forEach(drawSeg)}
+async function syncStrokes(){  // 서버 그림을 받아 맞춤 (큰 화면에서 그린 것·지운 것·새 제시어로 비운 것)
+  if(fetching||!want)return;if(want.epoch===epoch&&want.n===segs.length)return;
+  fetching=true;
+  try{const from=want.epoch===epoch?segs.length:0;
+    const r=await fetch(`/api/strokes?epoch=${epoch}&from=${from}`,{cache:'no-store',headers:H});const j=await r.json();
+    if(j.epoch!==epoch||(j.from===0&&from!==0)){epoch=j.epoch;segs=j.segs.slice();redrawAll()}
+    else if(j.from===segs.length)j.segs.forEach(s=>{segs.push(s);drawSeg(s)});else{segs=[];epoch=-1}
+  }catch(e){}finally{fetching=false}
+  if(want&&(want.n!==segs.length||want.epoch!==epoch))setTimeout(syncStrokes,60);
+}
+let drawing=false,lastP=null,sid=0,buf=[],flushT=null;
+const pos=e=>{const r=canvas.getBoundingClientRect();return [Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))]};
+function addSeg(a,b){const s=[+a[0].toFixed(4),+a[1].toFixed(4),+b[0].toFixed(4),+b[1].toFixed(4),pen.erase?'E':pen.c,pen.w,sid];drawSeg(s);buf.push(s);if(!flushT)flushT=setTimeout(flush,80)}
+async function flush(){clearTimeout(flushT);flushT=null;if(!buf.length)return;const send=buf.splice(0);await stroke({action:'add',segs:send})}
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(!canvas.width||!canvas.height)fitCanvas();try{canvas.setPointerCapture(e.pointerId)}catch(err){}drawing=true;sid=(Math.random()*1e9)|0;lastP=pos(e);addSeg(lastP,lastP)});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();const ce=e.getCoalescedEvents?e.getCoalescedEvents():[],evs=ce.length?ce:[e];for(const ev of evs){const p=pos(ev);if(Math.hypot(p[0]-lastP[0],p[1]-lastP[1])<0.003)continue;addSeg(lastP,p);lastP=p}});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>canvas.addEventListener(n,()=>{if(drawing){drawing=false;flush()}}));
+canvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});  // 그릴 때 화면이 따라 움직이지 않게
+if(window.ResizeObserver)new ResizeObserver(()=>fitCanvas()).observe(cvBox);else addEventListener('resize',fitCanvas);
+renderTools();
+
+/* ---------- 제시어 · 정답/패스 ---------- */
+function show(d){
+  const x=d.catch;
+  if(d.stroke){want=d.stroke;if(!drawing)syncStrokes()}
+  if(!x){$('#game').textContent='캐치마인드 라운드가 시작되면 여기에 제시어가 떠요';$('#team').textContent='';$('#word').textContent='—';$('#time').textContent='';$('#score').textContent='';$('#btns').hidden=true;$('#draw').hidden=true;lastKey='';remain=0;wseq=null;return}
+  $('#game').textContent='🎨 캐치마인드'+(x.paused?' · ⏸ 일시정지':'');
+  $('#team').textContent=d.teams[x.team]||'';
+  $('#word').textContent=x.word||'단어 끝!';
+  $('#score').innerHTML='정답 <b>'+x.correct+'</b> · 패스 '+x.pass;
+  const key=x.word+'|'+x.wseq;
+  if(key!==lastKey){if(lastKey){const b=$('#box');b.classList.remove('new');void b.offsetWidth;b.classList.add('new');if(navigator.vibrate)navigator.vibrate(150)}lastKey=key}
+  wseq=x.wseq;paused=x.paused;remain=x.remain;recv=performance.now();
+  if($('#draw').hidden){$('#draw').hidden=false;fitCanvas()}
+  $('#btns').hidden=false;$('#bOk').disabled=$('#bPs').disabled=busy||paused||!x.word;
+}
+async function poll(){
+  clearTimeout(pollT);
+  try{
+    const r=await fetch('/api/word',{cache:'no-store',headers:H});if(r.status===401){location.reload();return}
+    if(!busy)show(await r.json());
+  }catch(e){$('#game').textContent='서버 연결 중…'}
+  pollT=setTimeout(poll,700);
+}
+async function press(action){
+  if(busy||wseq===null)return;busy=true;$('#bOk').disabled=$('#bPs').disabled=true;$('#msg').textContent='';
+  await flush();
+  try{
+    const r=await fetch('/api/word',{method:'POST',cache:'no-store',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({action,wseq})});
+    if(r.status===401){location.reload();return}
+    const j=await r.json();
+    if(r.ok){$('#msg').textContent=j.msg||(action==='correct'?'⭕ 정답! 다음 제시어':'⏭ 패스! 다음 제시어');busy=false;
+      drawing=false;buf=[];if(j.w&&j.w.stroke){epoch=j.w.stroke.epoch;segs=[];redrawAll()}show(j.w)}
+    else{$('#msg').textContent=j.error||'다시 눌러 주세요';busy=false;poll()}
+  }catch(e){$('#msg').textContent='연결이 끊겼어요. 다시 눌러 주세요';busy=false;poll()}
+}
+$('#bOk').addEventListener('click',()=>press('correct'));
+$('#bPs').addEventListener('click',()=>press('pass'));
+(function tick(){if(lastKey)$('#time').textContent=fmt(remain-(paused?0:performance.now()-recv));requestAnimationFrame(tick)})();
+poll();
+})();
+</script>
+</body>
+</html>

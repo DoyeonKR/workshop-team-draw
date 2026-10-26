@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>닉네임 특별상 투표</title>
+<style>
+:root{--bg:#07060f;--panel:rgba(255,255,255,.055);--line:rgba(255,255,255,.13);--text:#f4f2ff;--muted:#aaa3cc;--cL:#fbbf24;--c1:#22d3ee;--c2:#f472b6}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+  background:radial-gradient(40% 35% at 20% 25%,rgba(34,211,238,.14),transparent 70%),radial-gradient(40% 35% at 80% 30%,rgba(244,114,182,.14),transparent 70%),radial-gradient(45% 40% at 50% 90%,rgba(251,191,36,.09),transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{margin:0;font-size:clamp(24px,2.6vw,36px);font-weight:900;background:linear-gradient(90deg,#22d3ee,#fff,#f472b6,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{font-family:inherit;font-size:15px;font-weight:800;padding:10px 15px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:rgba(255,255,255,.16)}
+.btn.big{font-size:24px;padding:16px 28px;border-radius:18px}
+.btn.ok{background:linear-gradient(90deg,#4ade80,#16a34a);color:#04210f;border-color:transparent}
+.prog{margin-left:auto;font-size:18px;font-weight:900;display:flex;align-items:center;gap:10px}
+.bar{width:160px;height:10px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#f472b6)}
+.card{padding:20px;border-radius:22px;border:1px solid var(--line);background:var(--panel);min-height:calc(100vh - 110px);display:flex;flex-direction:column;gap:16px}
+.step{font-size:clamp(24px,2.6vw,34px);font-weight:900}
+.step small{display:block;font-size:15px;color:var(--muted);font-weight:700;margin-top:6px}
+.step b{color:#fde68a}
+.names{display:flex;flex-wrap:wrap;gap:10px}
+.name{font-family:inherit;font-size:22px;font-weight:800;padding:16px 22px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);cursor:pointer}
+.name:hover{background:rgba(255,255,255,.16)}
+.name:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.name i{font-style:normal;font-size:12px;margin-left:6px;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.12)}
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.cand{font-family:inherit;min-height:100px;border-radius:18px;border:2px solid var(--k);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:900;font-size:clamp(19px,1.7vw,26px);word-break:keep-all}
+.cand small{font-size:12px;font-weight:700;color:var(--k)}
+.cand:hover{background:rgba(255,255,255,.12);transform:translateY(-2px)}
+.cand:disabled{opacity:.25;cursor:not-allowed;transform:none}
+.cand[data-t="L"]{--k:var(--cL)}.cand[data-t="1"]{--k:var(--c1)}.cand[data-t="2"]{--k:var(--c2)}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.big-name{font-size:clamp(44px,7vw,110px);font-weight:900;word-break:keep-all;line-height:1.1}
+.ic{font-size:110px;animation:pop .4s}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.muted{color:var(--muted);font-size:18px}
+.err{color:#fca5a5;font-weight:800;min-height:22px}
+table{border-collapse:collapse;font-size:17px;margin:0 auto;min-width:min(520px,100%)}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:center}
+th{color:var(--muted);font-weight:700}
+#cf{position:fixed;inset:0;pointer-events:none;z-index:50}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.side{padding:18px;border-radius:22px;border:1px solid var(--line);background:var(--panel);position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.side h2{margin:0 0 4px;font-size:20px}
+.side .sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.lb{display:flex;flex-direction:column;gap:8px}
+.lbr{display:grid;grid-template-columns:28px minmax(0,1fr) 34px;gap:8px;align-items:center}
+.lbr .rk{font-weight:900;color:var(--muted);text-align:center}
+.lbr .nm{font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbr .nm small{font-weight:700;font-size:11px;margin-left:4px;color:var(--k)}
+.lbr .bar2{height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}
+.lbr .bar2 i{display:block;height:100%;background:var(--k);border-radius:99px;transition:width .6s}
+.lbr .v{font-size:20px;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
+.lbr[data-t="L"]{--k:var(--cL)}.lbr[data-t="1"]{--k:var(--c1)}.lbr[data-t="2"]{--k:var(--c2)}
+.lbr.top .nm::before{content:"👑 "}
+.lbr.bump .v{animation:pop .5s}
+.empty{color:var(--muted);font-size:14px}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.side{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<canvas id="cf"></canvas>
+<div class="wrap">
+  <header>
+    <a class="btn" href="/">← 팀뽑기</a>
+    <h1>🗳 닉네임 특별상 투표</h1>
+    <div class="prog" id="prog"></div>
+  </header>
+  <div class="layout">
+    <div class="card" id="stage"><div class="center"><div class="muted">불러오는 중…</div></div></div>
+    <aside class="side"><h2>📊 실시간 득표 현황</h2><div class="sub">닉네임별 표 수 · 누가 누구를 찍었는지는 저장되지 않아요</div><div class="lb" id="lb"></div></aside>
+  </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tcolor=t=>({L:'#fbbf24','1':'#22d3ee','2':'#f472b6'}[t]||'#fff');
+const nn=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+let V=null,step='who',voter=null,cand=null,idle=null,doneT=null,lastKey='',err='';
+function tname(t){return (V&&V.teams&&V.teams[t])||(t==='L'?'리더팀':t+'팀')}
+async function load(){
+  try{const r=await fetch('/api/vote',{cache:'no-store'});V=await r.json();render()}catch(e){$('#prog').textContent='서버 연결 중…'}
+}
+function reset(){step='who';voter=null;cand=null;err='';clearTimeout(idle);render()}
+function touch(){clearTimeout(idle);idle=setTimeout(()=>{if(step!=='who')reset()},60000)} // 고른 닉네임이 화면에 남지 않게
+function render(){
+  if(!V)return;
+  if(V.phase!=='open'&&step!=='done'){step='who';voter=null;cand=null}
+  if(voter&&V.voters.some(x=>x.name===voter&&x.voted)&&step!=='done'){step='who';voter=null}
+  $('#prog').innerHTML=`${V.runoff?'결선 · ':''}투표 ${V.votedCount} / ${V.total}명<span class="bar"><i style="width:${100*V.votedCount/Math.max(1,V.total)}%"></i></span>`;
+  renderBoard();
+  const key=JSON.stringify([V.phase,step,voter,cand,err,V.voters.map(x=>x.voted),V.candidates.map(c=>c.id+c.name),V.result&&V.result.rows.map(r=>r.votes),V.teams]);
+  if(key===lastKey)return;lastKey=key;
+  let h;
+  if(V.phase==='revealed'){
+    const r=V.result;
+    if(r.tie)h=`<div class="center"><div class="ic">🤝</div><div class="big-name">동점!</div><div class="muted">${r.winners.map(x=>`「${esc(x.name)}」`).join(' · ')} — 곧 결선 투표를 해요</div></div>`;
+    else{const x=r.winners[0];h=`<div class="center"><div class="ic">🏅</div><div class="muted">닉네임 특별상</div><div class="big-name" style="color:${tcolor(x.team)}">${esc(x.name)}</div><div class="muted">${esc(x.real)} · ${esc(tname(x.team))} · ${x.votes}표</div></div>`}
+  }else if(step==='who'){
+    h=`<div class="step">${V.runoff?'🗳 결선 투표 · ':''}1. 자기 <b>본명</b>을 눌러 주세요<small>한 사람당 한 표 · 이미 투표한 이름은 잠겨 있어요</small></div>
+      <div class="names">${V.voters.map(x=>`<button class="name" data-who="${esc(x.name)}" type="button"${x.voted?' disabled':''}>${esc(x.name)}${x.host?'<i>사회자</i>':''}${x.voted?'<i>✓ 완료</i>':''}</button>`).join('')}</div>`;
+  }else if(step==='pick'){
+    const me=nn(voter);
+    h=`<div class="step">2. <b>${esc(voter)}</b>님, 특별상을 줄 <b>닉네임</b>을 고르세요<small>본인 닉네임은 고를 수 없어요 · <a href="#" data-back="1" style="color:#a5f3fc">← 본명 다시 고르기</a></small></div>
+      <div class="cands">${V.candidates.map(c=>`<button class="cand" data-t="${c.team}" data-cand="${c.id}" type="button"${c.realKey===me?' disabled':''}>${esc(c.name)}<small>${esc(tname(c.team))}</small></button>`).join('')}</div>`;
+  }else if(step==='confirm'){
+    const c=V.candidates.find(x=>x.id===cand);
+    h=`<div class="center"><div class="step">${esc(voter)}님의 한 표</div><div class="big-name" style="color:${c?tcolor(c.team):'#fff'}">「${c?esc(c.name):'?'}」</div>
+      <div class="err">${esc(err)}</div>
+      <div><button class="btn big ok" data-cast="1" type="button">✅ 투표하기</button> <button class="btn big" data-repick="1" type="button">다시 고르기</button></div></div>`;
+  }else{
+    h=`<div class="center"><div class="ic">🗳</div><div class="step">투표 완료!</div><div class="muted">다음 사람에게 넘겨 주세요</div></div>`;
+  }
+  $('#stage').innerHTML=h;
+}
+document.addEventListener('click',async e=>{
+  const w=e.target.closest('[data-who]'),c=e.target.closest('[data-cand]'),cast=e.target.closest('[data-cast]'),rp=e.target.closest('[data-repick]'),bk=e.target.closest('[data-back]');
+  if(w&&!w.disabled){voter=w.dataset.who;step='pick';err='';touch();render();return}
+  if(c&&!c.disabled){cand=c.dataset.cand;step='confirm';err='';touch();render();return}
+  if(rp){step='pick';cand=null;err='';touch();render();return}
+  if(bk){e.preventDefault();reset();return}
+  if(cast){cast.disabled=true;
+    try{const r=await fetch('/api/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voter,cand})});const j=await r.json();
+      if(!r.ok){err=j.error||'투표하지 못했어요';lastKey='';render();return}
+      step='done';voter=null;cand=null;clearTimeout(idle);confetti();await load();
+      clearTimeout(doneT);doneT=setTimeout(()=>{if(step==='done')reset()},2500)}
+    catch(x){err='서버에 연결할 수 없어요';lastKey='';render()}}
+});
+let lastBoard='',prevVotes={};
+function renderBoard(){
+  const rows=(V.result&&V.result.rows||[]).filter(r=>r.votes>0),k=JSON.stringify([rows,V.teams]);
+  if(k===lastBoard)return;lastBoard=k;
+  const top=rows.length?rows[0].votes:0;
+  $('#lb').innerHTML=rows.length?rows.map((r,i,a)=>`<div class="lbr${r.votes===top?' top':''}${prevVotes[r.id]!==undefined&&r.votes>prevVotes[r.id]?' bump':''}" data-t="${r.team}">
+      <span class="rk">${1+a.filter(x=>x.votes>r.votes).length}</span>
+      <div><div class="nm">${esc(r.name)}<small>${esc(tname(r.team))}</small></div><div class="bar2"><i style="width:${100*r.votes/Math.max(1,top)}%"></i></div></div>
+      <span class="v">${r.votes}</span></div>`).join(''):'<div class="empty">아직 표가 없어요. 첫 표를 기다리는 중…</div>';
+  prevVotes={};rows.forEach(r=>prevVotes[r.id]=r.votes);
+}
+// 가벼운 축하 효과
+function confetti(){const c=$('#cf'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;
+  const cols=['#22d3ee','#f472b6','#fbbf24','#a78bfa','#34d399','#fff'];const ps=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*3,r:Math.random()*6.3,vr:(Math.random()-.5)*.3,w:6+Math.random()*7,h:9+Math.random()*8,c:cols[(Math.random()*cols.length)|0]}));
+  let n=0;(function f(){x.clearRect(0,0,c.width,c.height);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(++n<180)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})()}
+load();setInterval(load,2000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>2차 메뉴</title>
+<style>
+:root{--bg:#0b0718;--text:#f4f2ff;--muted:#aaa3cc;--line:rgba(255,255,255,.14)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 50% -10%,#5b2a12 0%,var(--bg) 60%);background-color:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;min-height:100vh;padding:22px 14px 30px}
+.wrap{max-width:560px;margin:0 auto}
+h1{margin:0 0 6px;font-size:28px;font-weight:900;text-align:center;background:linear-gradient(90deg,#fde68a,#fff,#fdba74);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:18px}
+form{display:flex;flex-direction:column;gap:12px}
+input{width:100%;font-family:inherit;font-size:22px;font-weight:800;padding:16px 16px;border-radius:16px;border:2px solid rgba(253,186,116,.6);background:rgba(0,0,0,.45);color:#fff;outline:none;text-align:center}
+input:focus{border-color:#fde68a}
+button{font-family:inherit;width:100%;min-height:62px;border:0;border-radius:18px;font-size:22px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#fdba74,#f97316);color:#2b1000;touch-action:manipulation}
+button:disabled{opacity:.5}
+.msg{min-height:22px;text-align:center;font-size:16px;font-weight:800;color:#86efac;margin-top:10px}
+.msg.err{color:#fca5a5}
+.got{margin-top:22px;font-size:14px;font-weight:800;color:var(--muted);text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.chip{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);font-size:15px;font-weight:800}
+.chip b{color:#fdba74;margin-left:4px}
+.closed{text-align:center;padding:30px 0;font-size:22px;font-weight:900}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍜 2차 뭐 먹을까?</h1>
+  <div class="sub">먹고 싶은 메뉴를 적어서 보내 주세요 (여러 개 보내도 돼요)</div>
+  <form id="f" autocomplete="off">
+    <input id="t" maxlength="20" placeholder="예) 치킨, 곱창, 떡볶이" enterkeyhint="send">
+    <button id="b" type="submit">보내기 🚀</button>
+  </form>
+  <div class="msg" id="msg"></div>
+  <div class="got" id="got"></div>
+  <div class="chips" id="chips"></div>
+</div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let M=null,sending=false,lastSent=0;
+function render(){
+  if(!M)return;
+  const closed=M.phase!=='open';
+  $('#t').disabled=$('#b').disabled=closed||sending;
+  if(closed&&!$('#f').dataset.closed){$('#f').dataset.closed='1';$('#msg').className='msg err';$('#msg').textContent='메뉴 받기가 마감됐어요. 큰 화면을 봐 주세요!'}
+  if(!closed&&$('#f').dataset.closed){delete $('#f').dataset.closed;$('#msg').textContent=''}
+  $('#got').textContent=M.total?`지금까지 ${M.total}개 모였어요`:'아직 아무도 안 보냈어요. 첫 번째로!';
+  $('#chips').innerHTML=M.rows.slice(0,30).map(r=>`<span class="chip">${esc(r.text)}${r.count>1?`<b>×${r.count}</b>`:''}</span>`).join('');
+}
+async function load(){try{const r=await fetch('/api/menu',{cache:'no-store'});M=await r.json();render()}catch(e){}}
+$('#f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const t=$('#t').value.trim();if(!t||sending)return;
+  if(Date.now()-lastSent<1500){$('#msg').className='msg err';$('#msg').textContent='잠깐만요, 천천히 보내 주세요';return}
+  sending=true;render();
+  try{const r=await fetch('/api/menu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});const j=await r.json();
+    if(r.ok){M=j.m;lastSent=Date.now();$('#t').value='';$('#msg').className='msg';$('#msg').textContent=`✅ ${j.msg} 더 보내도 돼요`;if(navigator.vibrate)navigator.vibrate(80)}
+    else{$('#msg').className='msg err';$('#msg').textContent=j.error||'다시 보내 주세요'}}
+  catch(err){$('#msg').className='msg err';$('#msg').textContent='연결이 끊겼어요. 다시 보내 주세요'}
+  sending=false;render();$('#t').focus();
+});
+load();setInterval(load,3000);
+})();
+</script>
+</body>
+</html>
