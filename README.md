@@ -17,6 +17,7 @@ Python 표준 라이브러리만 사용한다(설치할 패키지 없음). 화�
 | `/mvp` | 참여왕 투표 | 각자 휴대폰으로 QR, 1인 1표, 자기 자신 제외 |
 | `/stay` | 남겠다 / 집에 가겠다 | 다시 누르면 선택 변경 |
 | `/menu` | 2차 메뉴 모으기 | 이름 없이 입력, 같은 메뉴는 묶어서 많을수록 크게 |
+| `/lottery` | 카드 뽑기(제비뽑기) | 관리자가 전체 인원·당첨 수를 정하면 카드가 섞이고, 각자 한 장씩 뒤집어 당첨/꽝 확인. `/card`, `/draw` 도 같은 화면 |
 | `/timetable` | 전체화면 타임테이블 | 현재 순서 강조, 휴식 타이머(B), 감사 장면(T) |
 
 ## 실행
@@ -59,6 +60,7 @@ brew install cloudflared     # 처음 한 번
 | `index.html` | 팀 뽑기 화면 |
 | `games.html` | 게임 진행 화면 |
 | `word.html`, `vote.html`, `mvp.html`, `stay.html`, `menu.html` | 휴대폰용 화면 |
+| `lottery.html` | 카드 뽑기 (큰 화면·휴대폰 겸용) |
 | `timetable.html` | 전체화면 타임테이블 |
 | `start.command`, `tunnel.command` | macOS 더블클릭 실행용 |
 | `사용법.txt` | 진행자용 사용 설명서 |

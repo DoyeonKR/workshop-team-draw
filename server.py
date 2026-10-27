@@ -33,11 +33,12 @@ GAME_SESSIONS = {}  # 화면 세션 토큰 → 발급 시각 ms
 TICKET_TTL_MS = 60 * 1000
 SESSION_TTL_MS = 24 * 3600 * 1000
 WORD = os.path.join(BASE, "word.html")
-VOTE = os.path.join(BASE, "vote.html")
-MVP = os.path.join(BASE, "mvp.html")
-STAY = os.path.join(BASE, "stay.html")
-MENU = os.path.join(BASE, "menu.html")  # 2차 메뉴 입력 (휴대폰, 이름 없이 바로 입력)  # 남겠다/집에 가겠다 투표 (휴대폰, 비밀번호 없음)  # 참여왕 투표 (휴대폰, 비밀번호 없음, 투표만 가능)
-TIMETABLE = os.path.join(BASE, "timetable.html")  # 전체화면 타임테이블 (비밀번호 없음)  # 특별상 투표 화면 (비밀번호 없음, 투표만 가능)
+VOTE = os.path.join(BASE, "vote.html")  # 특별상 투표 화면 (비밀번호 없음, 투표만 가능)
+MVP = os.path.join(BASE, "mvp.html")  # 참여왕 투표 (휴대폰, 비밀번호 없음, 투표만 가능)
+STAY = os.path.join(BASE, "stay.html")  # 남겠다/집에 가겠다 투표 (휴대폰, 비밀번호 없음)
+MENU = os.path.join(BASE, "menu.html")  # 2차 메뉴 입력 (휴대폰, 이름 없이 바로 입력)
+LOTTERY = os.path.join(BASE, "lottery.html")  # 카드 뽑기(제비뽑기): 큰 화면·휴대폰 겸용, 설정은 관리자만
+TIMETABLE = os.path.join(BASE, "timetable.html")  # 전체화면 타임테이블 (비밀번호 없음)
 
 # 참가자 본명 명단 (닉네임 입력 후 이 중에서 자기 이름을 고른다)
 ROSTER = [
@@ -216,8 +217,9 @@ def default_games():
         "reveal": 0,
         "vote": new_vote(),
         "mvp": new_vote(),  # 참여왕 투표 (모두 휴대폰으로 QR 찍고 한 사람에게 한 표)
-        "stay": {"votes": {}, "phase": "open"},
-        "menu": {"items": [], "phase": "open"},  # 2차 먹고 싶은 메뉴 (이름 없이 입력, 같은 메뉴는 묶어서 셈)  # 남겠다/집에 가겠다 (본명 → "stay"|"home", 다시 누르면 바꿈)
+        "stay": {"votes": {}, "phase": "open"},  # 남겠다/집에 가겠다 (본명 → "stay"|"home", 다시 누르면 바꿈)
+        "menu": {"items": [], "phase": "open"},  # 2차 먹고 싶은 메뉴 (이름 없이 입력, 같은 메뉴는 묶어서 셈)
+        "lottery": new_lottery(),  # 카드 뽑기 (제비뽑기)
     }
 
 
@@ -268,6 +270,7 @@ def sanitize_games(g):
         d["charades"]["used"] = [clean(w) for w in ((g.get("charades") or {}).get("used") or []) if clean(w)]
         d["bonus"] = {t: int((g.get("bonus") or {}).get(t) or 0) for t in GT}
         d["reveal"] = max(0, min(3, int(g.get("reveal") or 0)))
+        d["lottery"] = sanitize_lottery(g.get("lottery"))
         mn = g.get("menu") or {}
         d["menu"] = {"items": [{"text": str(i.get("text"))[:MENU_MAX], "at": int(i.get("at") or 0)}
                                for i in (mn.get("items") or []) if isinstance(i, dict) and str(i.get("text") or "").strip()][-MENU_LIMIT:],
@@ -498,6 +501,82 @@ def menu_view():
         gr["last"] = max(gr["last"], it["at"])
     rows = sorted(groups.values(), key=lambda r: (-r["count"], -r["last"]))
     return {"phase": m["phase"], "total": len(m["items"]), "rows": rows}
+
+
+LOTTERY_MAX = 100  # 카드(전체 인원) 최대
+
+
+def new_lottery(total=10, winners=2, round_no=1):
+    """카드 total 장 중 winners 장이 당첨. 당첨 자리는 무작위로 섞어 둔다."""
+    cards = [True] * winners + [False] * (total - winners)
+    for i in range(len(cards) - 1, 0, -1):
+        j = secrets.randbelow(i + 1)
+        cards[i], cards[j] = cards[j], cards[i]
+    return {"total": total, "winners": winners, "cards": cards, "opened": {}, "round": round_no}
+
+
+def sanitize_lottery(lt):
+    try:
+        cards = [bool(c) for c in lt["cards"]]
+        if not 1 <= len(cards) <= LOTTERY_MAX:
+            raise ValueError
+        opened = {str(int(k)): {"who": clean(v.get("who")), "at": int(v.get("at") or 0)}
+                  for k, v in (lt.get("opened") or {}).items() if 0 <= int(k) < len(cards)}
+        return {"total": len(cards), "winners": sum(cards), "cards": cards, "opened": opened,
+                "round": max(1, int(lt.get("round") or 1))}
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return new_lottery()
+
+
+def lottery_view(admin=False):
+    lt = G()["lottery"]
+    cards = []
+    for i, win in enumerate(lt["cards"]):
+        o = lt["opened"].get(str(i))
+        # 안 뒤집은 카드의 당첨 여부는 관리자에게도 보내지 않음 (화면을 띄워 둔 노트북에서 들킬 수 있어서)
+        cards.append({"i": i, "opened": bool(o), "win": win if o else None, "who": o["who"] if o else ""})
+    won = sum(1 for c in cards if c["opened"] and c["win"])
+    return {"total": lt["total"], "winners": lt["winners"], "round": lt["round"], "cards": cards,
+            "openedCount": len(lt["opened"]), "wonCount": won, "winnersLeft": lt["winners"] - won,
+            "admin": admin}
+
+
+def lottery_action(a, b, admin):
+    lt = G()["lottery"]
+    if a == "open":
+        try:
+            i = int(b.get("idx"))
+        except (TypeError, ValueError):
+            raise Bad("카드를 다시 골라 주세요")
+        if not 0 <= i < len(lt["cards"]):
+            raise Bad("카드를 다시 골라 주세요")
+        if b.get("round") is not None and b.get("round") != lt["round"]:
+            raise Bad("관리자가 카드를 새로 섞었어요. 다시 골라 주세요")
+        if str(i) in lt["opened"]:
+            raise Bad("이미 누가 뽑은 카드예요. 다른 카드를 골라 주세요")
+        lt["opened"][str(i)] = {"who": clean(b.get("who")), "at": now_ms()}
+        win = lt["cards"][i]
+        print(f"[{time.strftime('%H:%M:%S')}] 카드 뽑기 {i + 1}번: {'당첨' if win else '꽝'}"
+              f"{' (' + clean(b.get('who')) + ')' if clean(b.get('who')) else ''}")
+        return {"idx": i, "win": win}
+    if not admin:
+        raise Bad("관리자만 할 수 있어요")
+    if a == "setup":  # 전체 인원·당첨 수를 정하고 새로 섞기
+        try:
+            total, winners = int(b.get("total")), int(b.get("winners"))
+        except (TypeError, ValueError):
+            raise Bad("전체 인원과 당첨 수는 숫자로 입력해 주세요")
+        if not 1 <= total <= LOTTERY_MAX:
+            raise Bad(f"전체 인원은 1~{LOTTERY_MAX}명이에요")
+        if not 0 <= winners <= total:
+            raise Bad("당첨 수는 0명부터 전체 인원까지예요")
+        G()["lottery"] = new_lottery(total, winners, lt["round"] + 1)
+        return f"카드 {total}장 · 당첨 {winners}장으로 새로 섞었어요"
+    if a == "reveal":  # 남은 카드 모두 공개
+        for i in range(len(lt["cards"])):
+            lt["opened"].setdefault(str(i), {"who": "", "at": now_ms()})
+        return "남은 카드를 모두 공개했어요"
+    raise Bad("알 수 없는 동작입니다")
 
 
 def menu_action(a, b):
@@ -1391,6 +1470,15 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             except FileNotFoundError:
                 return self._send(500, "stay.html 이 없습니다".encode(), "text/plain; charset=utf-8")
+        if u.path in ("/lottery", "/lottery.html", "/card", "/draw"):
+            try:
+                with open(LOTTERY, "rb") as f:
+                    return self._send(200, f.read(), "text/html; charset=utf-8")
+            except FileNotFoundError:
+                return self._send(500, "lottery.html 이 없습니다".encode(), "text/plain; charset=utf-8")
+        if u.path == "/api/lottery":
+            with cond:
+                return self._json(200, lottery_view(admin))
         if u.path in ("/menu", "/menu.html"):
             try:
                 with open(MENU, "rb") as f:
@@ -1529,6 +1617,19 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(200, {"ok": True, "ticket": ticket, "page": page})
                 time.sleep(0.6)  # 연속 대입 늦추기
                 return self._json(401, {"error": "비밀번호가 틀렸어요"})
+            if u.path == "/api/adminlogin":  # 관리자 이름만 확인해서 토큰 발급 (팀 뽑기에는 아무 영향 없음)
+                if norm(b.get("name")) and norm(b.get("name")) == norm(ADMIN):
+                    print(f"[{time.strftime('%H:%M:%S')}] 관리자 입장 ({self.client_address[0]})")
+                    return self._json(200, {"ok": True, "token": ADMIN_TOKEN})
+                time.sleep(0.6)
+                return self._json(403, {"error": "관리자 이름이 아니에요"})
+            if u.path == "/api/lottery":  # 카드 뒤집기는 누구나, 설정(전체·당첨 수)·전체 공개는 관리자만
+                with cond:
+                    res = lottery_action(b.get("action"), b, self._is_admin(b.get("token")))
+                    changed()
+                    out = {"ok": True, "l": lottery_view(self._is_admin(b.get("token")))}
+                    out.update(res if isinstance(res, dict) else {"msg": res})
+                    return self._json(200, out)
             if u.path == "/api/menu":  # 공개: 메뉴 한 개 추가 (이름 없이)
                 with cond:
                     msg = menu_action("add", b)

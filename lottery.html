@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>카드 뽑기</title>
+<style>
+:root{--bg:#0b0718;--text:#f4f2ff;--muted:#aaa3cc;--line:rgba(255,255,255,.14);--gold:#fbbf24}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 700px at 50% -10%,#3b1d6e 0%,var(--bg) 62%);background-color:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;min-height:100vh;padding:16px 14px 40px;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1200px;margin:0 auto}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+header a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:700;padding:6px 12px;border:1px solid var(--line);border-radius:999px}
+h1{margin:0;font-size:clamp(26px,3.4vw,40px);font-weight:900;background:linear-gradient(90deg,#fde68a,#fff,#f9a8d4,#a5f3fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.stat span{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:14px;font-weight:800}
+.stat b{color:#fde68a}
+.mine{min-height:22px;font-size:15px;font-weight:800;color:#a5f3fc;margin-bottom:10px}
+.who{display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:14px;color:var(--muted)}
+.who input{flex:0 1 200px;min-width:0;font-family:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:#fff;outline:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw,96px),1fr));gap:10px;perspective:900px}
+.card{position:relative;aspect-ratio:3/4;border:0;padding:0;background:none;cursor:pointer;font-family:inherit;touch-action:manipulation}
+.card .in{position:absolute;inset:0;transition:transform .7s cubic-bezier(.3,1.4,.5,1);transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.card .f,.card .b{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;text-align:center}
+.card .f{background:linear-gradient(145deg,#6d28d9,#db2777);border:2px solid rgba(255,255,255,.35);box-shadow:0 6px 18px rgba(0,0,0,.45);color:#fff}
+.card .f::after{content:"";position:absolute;inset:7px;border-radius:9px;border:1.5px dashed rgba(255,255,255,.35)}
+.card .f .q{font-size:clamp(26px,3vw,40px);font-weight:900}
+.card .f .n{font-size:13px;font-weight:800;opacity:.85}
+.card .b{transform:rotateY(180deg);background:#1e1838;border:2px solid var(--line)}
+.card .b .r{font-size:clamp(18px,2.2vw,26px);font-weight:900}
+.card .b .w{font-size:12px;color:var(--muted);word-break:keep-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card.win .b{background:linear-gradient(145deg,#fde68a,#f59e0b);border-color:#fff3c4;color:#2b1600;box-shadow:0 0 26px rgba(251,191,36,.7)}
+.card.win .b .w{color:#5a3a00}
+.card.lose .b{color:#c9c2e6}
+.card:not(.flip):not(:disabled):hover .f{transform:translateY(-3px);filter:brightness(1.12)}
+.card:disabled{cursor:default}
+.card.locked:not(.flip) .f{filter:saturate(.35) brightness(.7)}
+.card.mine-card .b{outline:3px solid #a5f3fc;outline-offset:2px}
+#res{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(8,4,20,.82);text-align:center;padding:20px}
+#res.show{display:flex;animation:fade .3s}
+#res .e{font-size:110px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+#res .t{font-size:clamp(42px,9vw,90px);font-weight:900}
+#res .s{font-size:18px;color:#e9e4ff}
+#res.win .t{color:#fde68a;text-shadow:0 0 30px rgba(251,191,36,.8)}
+#res button{margin-top:14px;font-family:inherit;font-size:18px;font-weight:900;padding:12px 30px;border-radius:999px;border:0;background:#fff;color:#1a1033;cursor:pointer}
+@keyframes pop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.admin{margin-top:22px;padding:14px;border-radius:16px;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
+.admin h2{margin:0 0 10px;font-size:17px}
+.admin .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.admin label{font-size:14px;font-weight:800}
+.admin input{width:84px;font-family:inherit;font-size:18px;font-weight:800;padding:8px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:#fff;text-align:center}
+.btn{font-family:inherit;font-size:15px;font-weight:900;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer}
+.btn.gold{background:linear-gradient(90deg,#fde68a,#fbbf24);color:#2b1600;border:0}
+.btn.warn{border-color:rgba(248,113,113,.6);color:#fca5a5}
+.adminlink{margin-top:26px;text-align:center}
+.adminlink button{background:none;border:0;color:var(--muted);font-family:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.qr{display:flex;gap:14px;align-items:center;margin-top:12px}
+.qr #qr{padding:8px;background:#fff;border-radius:10px;line-height:0}
+.qr #qr img,.qr #qr canvas{width:130px!important;height:130px!important}
+.qr .u{font-size:13px;color:#fde68a;word-break:break-all}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f1640;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:55}
+@media(max-width:600px){.grid{--cw:64px;gap:8px}.card .f .n{font-size:11px}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <header><a href="/">← 처음으로</a><h1>🃏 카드 뽑기</h1></header>
+  <div class="stat" id="stat"></div>
+  <div class="who">내 이름 <input id="who" maxlength="20" placeholder="(선택) 결과에 같이 표시"></div>
+  <div class="mine" id="mine"></div>
+  <div class="grid" id="grid"></div>
+  <div id="adminBox"></div>
+</div>
+<div id="res"></div>
+<div class="toast" id="toast"></div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+let L=null,token=LS.get('lottery-admin-token'),busy=false,lastGrid='',pageUrl=location.origin+'/lottery';
+const myKey=()=>L?'lottery-pick-r'+L.round:'';
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
+$('#who').value=LS.get('lottery-who')||'';
+$('#who').addEventListener('input',e=>LS.set('lottery-who',e.target.value.trim()||null));
+
+/* 축하 효과 */
+const fx=(()=>{const c=$('#fx'),x=c.getContext('2d');let P=[],run=false;
+  function size(){c.width=innerWidth;c.height=innerHeight}size();addEventListener('resize',size);
+  function loop(){x.clearRect(0,0,c.width,c.height);P=P.filter(p=>p.l>0);for(const p of P){p.x+=p.vx;p.y+=p.vy;p.vy+=.18;p.l--;x.fillStyle=p.c;x.globalAlpha=Math.min(1,p.l/40);x.fillRect(p.x,p.y,p.s,p.s*.6)}x.globalAlpha=1;if(P.length)requestAnimationFrame(loop);else run=false}
+  return{burst(n){const cols=['#fde68a','#fbbf24','#f472b6','#a5f3fc','#86efac','#fff'];for(let i=0;i<n;i++)P.push({x:innerWidth/2,y:innerHeight/2,vx:(Math.random()-.5)*16,vy:(Math.random()-1)*14,s:5+Math.random()*7,c:cols[i%cols.length],l:90+Math.random()*60});if(!run){run=true;loop()}}};
+})();
+
+function render(){
+  if(!L)return;
+  const isAdmin=!!(token&&L.admin);
+  const mine=LS.get(myKey());
+  $('#stat').innerHTML=`<span>전체 <b>${L.total}</b>장</span><span>🎉 당첨 <b>${L.winners}</b>장</span><span>남은 당첨 <b>${L.winnersLeft}</b></span><span>뽑은 카드 <b>${L.openedCount}</b> / ${L.total}</span>`;
+  const mc=mine!=null?L.cards[+mine]:null;
+  $('#mine').textContent=isAdmin?'관리자 기기: 여러 사람이 이 화면에서 차례로 뽑을 수 있어요':mc&&mc.opened?`내 카드: ${+mine+1}번 · ${mc.win?'🎉 당첨!':'꽝'}`:L.openedCount>=L.total?'카드를 모두 뽑았어요':'카드를 한 장 골라 눌러 보세요!';
+  const locked=!isAdmin&&mine!=null;
+  const sig=JSON.stringify([L.round,L.cards,locked,mine,isAdmin]);
+  if(sig!==lastGrid){lastGrid=sig;
+    $('#grid').style.setProperty('--cw',L.total<=12?'150px':L.total<=30?'110px':'84px');
+    $('#grid').innerHTML=L.cards.map(c=>`<button class="card${c.opened?' flip '+(c.win?'win':'lose'):''}${locked?' locked':''}${mine!=null&&+mine===c.i?' mine-card':''}" data-i="${c.i}" type="button"${c.opened||locked?' disabled':''}>
+      <div class="in"><div class="f"><div class="q">?</div><div class="n">${c.i+1}</div></div>
+      <div class="b"><div class="r">${c.opened?(c.win?'🎉 당첨':'꽝'):''}</div><div class="w">${esc(c.who||(c.i+1)+'번')}</div></div></div></button>`).join('');
+  }
+  renderAdmin(isAdmin);
+}
+function renderAdmin(isAdmin){
+  const box=$('#adminBox');
+  if(!isAdmin){if(box.dataset.m!=='out'){box.dataset.m='out';box.innerHTML='<div class="adminlink"><button id="aIn" type="button">관리자</button></div>'}return}
+  if(box.dataset.m==='in')return;box.dataset.m='in';
+  box.innerHTML=`<div class="admin"><h2>⚙ 관리자 설정</h2>
+    <div class="row"><label>전체 인원 <input id="aTotal" type="number" min="1" max="100" value="${L.total}"></label>
+      <label>당첨 <input id="aWin" type="number" min="0" max="100" value="${L.winners}"></label>
+      <button class="btn gold" id="aSet" type="button">설정하고 새로 섞기</button></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="aReveal" type="button">남은 카드 모두 공개</button>
+      <button class="btn" id="aQr" type="button">📱 휴대폰 QR 보기</button><button class="btn warn" id="aOut" type="button">관리자 나가기</button></div>
+    <div class="qr" id="qrWrap" hidden><div id="qr"></div><div class="u" id="qrUrl"></div></div></div>`;
+}
+async function load(){
+  try{const r=await fetch('/api/lottery'+(token?'?token='+encodeURIComponent(token):''),{cache:'no-store'});L=await r.json();
+    if(token&&!L.admin){token=null;LS.set('lottery-admin-token',null);toast('관리자 인증이 풀렸어요 (서버 재시작). 다시 들어와 주세요')}
+    render()}catch(e){$('#stat').innerHTML='<span>서버 연결 중…</span>'}
+}
+async function post(body){
+  const r=await fetch('/api/lottery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token},body))});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'다시 시도해 주세요');if(j.l)L=j.l;return j;
+}
+function showResult(win,i){
+  const el=$('#res');el.className=win?'show win':'show';
+  el.innerHTML=`<div class="e">${win?'🎉':'😅'}</div><div class="t">${win?'당첨!':'꽝'}</div><div class="s">${i+1}번 카드${win?' — 축하해요!':' — 다음 기회에!'}</div><button type="button" id="resOk">확인</button>`;
+  if(win){fx.burst(220);setTimeout(()=>fx.burst(160),400)}
+  if(navigator.vibrate)navigator.vibrate(win?[120,60,220]:80);
+}
+document.addEventListener('click',async e=>{
+  if(e.target.id==='resOk'||e.target.id==='res'){$('#res').className='';return}
+  const c=e.target.closest('.card');
+  if(c&&!c.disabled&&!busy&&L){
+    const i=+c.dataset.i;
+    if(!confirm(`${i+1}번 카드를 뽑을까요?`))return;
+    busy=true;
+    try{const j=await post({action:'open',idx:i,round:L.round,who:$('#who').value.trim()});
+      if(!(token&&L.admin))LS.set(myKey(),String(i));
+      lastGrid='';render();showResult(j.win,i)}
+    catch(err){toast(err.message);load()}
+    busy=false;return;
+  }
+  if(e.target.id==='aIn'){
+    const name=prompt('관리자 이름을 입력해 주세요');if(!name)return;
+    try{const r=await fetch('/api/adminlogin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})});const j=await r.json();
+      if(r.ok&&j.token){token=j.token;LS.set('lottery-admin-token',token);toast('관리자로 들어왔어요');await load()}
+      else toast('관리자 이름이 아니에요')}catch(err){toast('연결이 끊겼어요')}
+    return;
+  }
+  if(e.target.id==='aSet'){
+    const total=+$('#aTotal').value,winners=+$('#aWin').value;
+    if(!confirm(`카드 ${total}장 중 당첨 ${winners}장으로 새로 섞을까요?\n지금까지 뽑은 카드는 모두 지워져요.`))return;
+    try{const j=await post({action:'setup',total,winners});toast(j.msg);lastGrid='';$('#adminBox').dataset.m='';render()}catch(err){toast(err.message)}return;
+  }
+  if(e.target.id==='aReveal'){if(!confirm('아직 안 뽑은 카드를 모두 공개할까요?'))return;try{const j=await post({action:'reveal'});toast(j.msg);render()}catch(err){toast(err.message)}return}
+  if(e.target.id==='aOut'){token=null;LS.set('lottery-admin-token',null);$('#adminBox').dataset.m='';await load();return}
+  if(e.target.id==='aQr'){const w=$('#qrWrap');w.hidden=!w.hidden;if(!w.hidden)drawQr();return}
+});
+async function drawQr(){
+  try{const j=await (await fetch('/api/info',{cache:'no-store'})).json();const u=j.public||(location.hostname==='localhost'&&j.urls&&j.urls[0])||location.origin+'/';pageUrl=u.replace(/\/$/,'')+'/lottery'}catch(e){}
+  $('#qrUrl').textContent=pageUrl;
+  if(!window.QRCode)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)}).catch(()=>{});
+  if(window.QRCode){$('#qr').innerHTML='';new QRCode($('#qr'),{text:pageUrl,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}
+}
+load();setInterval(()=>{if(!busy)load()},1200);
+})();
+</script>
+</body>
+</html>
