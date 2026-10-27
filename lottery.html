@@ -51,11 +51,12 @@ h1{margin:0;font-size:clamp(26px,3.4vw,42px);font-weight:900;background:linear-g
 .card .b .ic{font-size:clamp(22px,3vw,40px)}
 .card .b .r{font-size:clamp(16px,2vw,24px);font-weight:900}
 .card .b .w{font-size:12px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card.win .b{background:linear-gradient(145deg,#fff3c4,#fbbf24 45%,#d97706);border-color:#fff7d6;color:#2b1600;box-shadow:0 0 30px rgba(251,191,36,.85),inset 0 0 18px rgba(255,255,255,.6)}
-.card.win .b::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 10%,rgba(255,255,255,.55) 12%,transparent 16% 40%,rgba(255,255,255,.4) 42%,transparent 46%);animation:spin 4s linear infinite}
+.card.win .b{background:linear-gradient(160deg,#14290f,#3f0d0d 55%,#7f1d1d);border-color:#ef4444;color:#fecaca;box-shadow:0 0 26px rgba(239,68,68,.8),inset 0 0 18px rgba(0,0,0,.6)}
+.card.win .b::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(239,68,68,.35),transparent 70%);animation:redpulse 1.2s ease-in-out infinite}
+@keyframes redpulse{50%{opacity:.2}}
 .card.win .b>*{position:relative}
-.card.win .b .w{color:#5a3a00;font-weight:800}
-.card.lose .b{color:#c9c2e6}
+.card.win .b .w{color:#fecaca;font-weight:800}
+.card.lose .b{background:linear-gradient(160deg,#0b2a1a,#14532d);border-color:rgba(74,222,128,.6);color:#86efac}
 .card:not(.flip):not(:disabled):hover .f{transform:translateY(-4px);filter:brightness(1.15)}
 .card:disabled{cursor:default}
 .card.locked:not(.flip) .f{filter:saturate(.35) brightness(.7)}
@@ -63,38 +64,44 @@ h1{margin:0;font-size:clamp(26px,3.4vw,42px);font-weight:900;background:linear-g
 .card.shake .in{animation:shake .7s}
 @keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg) scale(1.05)}40%{transform:rotate(6deg) scale(1.08)}60%{transform:rotate(-4deg) scale(1.06)}80%{transform:rotate(3deg) scale(1.04)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* 당첨 연출 */
-#cele{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;background:radial-gradient(circle at 50% 50%,rgba(120,60,0,.55),rgba(8,4,20,.94) 70%)}
-#cele.show{display:flex}
-#cele .rays{position:absolute;width:260vmax;height:260vmax;left:50%;top:50%;margin:-130vmax 0 0 -130vmax;background:repeating-conic-gradient(from 0deg,rgba(255,214,102,.28) 0 6deg,transparent 6deg 18deg);animation:spin 14s linear infinite;mask:radial-gradient(circle,#000 0,transparent 60%);-webkit-mask:radial-gradient(circle,#000 0,transparent 60%)}
-#cele .flash{position:absolute;inset:0;background:#fff7d6;animation:flash 1s ease-out forwards;pointer-events:none}
-@keyframes flash{0%{opacity:.95}100%{opacity:0}}
-#cele .big{position:relative;width:min(62vmin,380px);aspect-ratio:3/4;border-radius:26px;background:linear-gradient(145deg,#fff8d6,#fcd34d 40%,#f59e0b 75%,#b45309);border:4px solid #fffbe8;box-shadow:0 0 80px rgba(251,191,36,.95),0 0 160px rgba(251,191,36,.55),inset 0 0 40px rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#3b1d00;text-align:center;overflow:hidden;animation:bigin 1.1s cubic-bezier(.2,1.6,.4,1) both}
-#cele .big::before{content:"";position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent 0 8%,rgba(255,255,255,.7) 10%,transparent 14% 45%,rgba(255,255,255,.55) 47%,transparent 51%);animation:spin 3s linear infinite}
-#cele .big>*{position:relative}
-#cele .tr{font-size:min(17vmin,110px);line-height:1;animation:blow .45s ease-in-out infinite alternate}
-#cele .t{font-size:min(14vmin,92px);font-weight:900;letter-spacing:.04em;text-shadow:0 3px 0 #fff3c4,0 0 24px rgba(255,255,255,.9)}
-#cele .nm{font-size:min(6.5vmin,38px);font-weight:900}
-#cele .no{font-size:min(4vmin,20px);font-weight:800;opacity:.8}
-#cele .side{position:absolute;top:50%;font-size:min(22vmin,170px);animation:blow .4s ease-in-out infinite alternate}
-#cele .side.l{left:4vw;transform:translateY(-50%) scaleX(-1)}
-#cele .side.r{right:4vw;transform:translateY(-50%)}
-#cele .cap{position:relative;margin-top:22px;font-size:clamp(20px,3vw,34px);font-weight:900;color:#fde68a;text-shadow:0 0 18px rgba(251,191,36,.9);animation:pulse 1s ease-in-out infinite}
-#cele .close{position:absolute;bottom:22px;font-family:inherit;font-size:16px;font-weight:900;padding:10px 26px;border-radius:999px;border:0;background:rgba(255,255,255,.92);color:#1a1033;cursor:pointer}
-@keyframes bigin{0%{transform:scale(.1) rotateY(540deg);opacity:0}60%{transform:scale(1.12) rotateY(0)}100%{transform:scale(1)}}
-@keyframes blow{from{transform:translateY(-50%) rotate(-8deg) scale(1)}to{transform:translateY(-50%) rotate(6deg) scale(1.12)}}
-#cele .tr{transform-origin:50% 60%}
-#cele .big .tr{animation:blow2 .45s ease-in-out infinite alternate}
-@keyframes blow2{from{transform:rotate(-10deg) scale(1)}to{transform:rotate(8deg) scale(1.15)}}
-#cele .side.l{animation:blowl .4s ease-in-out infinite alternate}
-@keyframes blowl{from{transform:translateY(-50%) scaleX(-1) rotate(-8deg)}to{transform:translateY(-50%) scaleX(-1) rotate(6deg) scale(1.12)}}
-@keyframes pulse{50%{transform:scale(1.08)}}
-#lose{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:rgba(8,4,20,.75);text-align:center}
+/* 당첨 = 악어가 덥석 (위·아래 턱이 송곳니로 화면을 물어 버림) */
+#cele{position:fixed;inset:0;z-index:50;display:none;overflow:hidden;background:#000}
+#cele.show{display:block}
+#cele .dark{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(70,0,0,.55),#000 78%)}
+#cele .jaw{position:absolute;left:-6vw;width:112vw;height:58vh;z-index:2;transition:transform .9s cubic-bezier(.25,.9,.3,1)}
+#cele .jaw.top{top:-60vh;border-radius:0 0 48% 48%/0 0 26% 26%;background:radial-gradient(circle at 30% 30%,rgba(0,0,0,.28) 0 7px,transparent 8px) 0 0/38px 32px,radial-gradient(circle at 70% 70%,rgba(0,0,0,.22) 0 6px,transparent 7px) 0 0/32px 36px,linear-gradient(180deg,#14290f,#2f5320 55%,#3d6b26 85%,#5b1a1a 96%,#7f1d1d)}
+#cele .jaw.bot{bottom:-60vh;border-radius:48% 48% 0 0/26% 26% 0 0;background:radial-gradient(circle at 40% 40%,rgba(0,0,0,.18) 0 6px,transparent 7px) 0 0/34px 30px,linear-gradient(0deg,#1c3612,#4d7a2c 45%,#a3b860 82%,#5b1a1a 95%,#7f1d1d)}
+#cele .teeth{position:absolute;left:0;width:100%;height:96px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+#cele .top .teeth{bottom:-84px}
+#cele .bot .teeth{top:-84px}
+#cele .eye{position:absolute;bottom:150px;width:min(13vw,120px);aspect-ratio:1.5;border-radius:50%;background:radial-gradient(circle at 50% 50%,#fde047,#ca8a04 70%,#713f12);box-shadow:0 0 30px #facc15,0 0 80px rgba(250,204,21,.6);border:5px solid #14290f}
+#cele .eye::after{content:"";position:absolute;left:50%;top:8%;width:14%;height:84%;transform:translateX(-50%);border-radius:50%;background:#000}
+#cele .eye.l{left:24%;transform:rotate(-12deg)}#cele .eye.r{right:24%;transform:rotate(12deg)}
+#cele.s1 .eye{animation:glare .25s ease-in-out infinite alternate}
+@keyframes glare{to{box-shadow:0 0 50px #fde047,0 0 140px rgba(250,204,21,.9)}}
+#cele.s1 .top{transform:translateY(32vh)}#cele.s1 .bot{transform:translateY(-32vh)}
+#cele.s2 .jaw{transition:transform .11s cubic-bezier(.7,0,1,.6)}
+#cele.s2 .top{transform:translateY(61vh)}#cele.s2 .bot{transform:translateY(-61vh)}
+#cele.s3 .jaw{transition:transform .5s cubic-bezier(.2,1.4,.4,1)}
+#cele.s3 .top{transform:translateY(40vh)}#cele.s3 .bot{transform:translateY(-40vh)}
+#cele .blood{position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(circle,rgba(220,38,38,0) 20%,rgba(127,29,29,.9));opacity:0}
+#cele.s2 .blood{animation:blood 1.4s ease-out}
+@keyframes blood{0%{opacity:1;background-color:rgba(255,0,0,.55)}100%{opacity:0}}
+#cele.shake{animation:shk .55s}
+@keyframes shk{10%{transform:translate(-22px,14px) rotate(-1deg)}25%{transform:translate(20px,-16px) rotate(1deg)}40%{transform:translate(-16px,10px)}55%{transform:translate(14px,-8px)}70%{transform:translate(-8px,6px)}85%{transform:translate(4px,-3px)}}
+#cele .msg{position:absolute;left:0;right:0;top:50%;z-index:5;text-align:center;transform:translateY(-50%) scale(.2);opacity:0;pointer-events:none}
+#cele.s3 .msg{opacity:1;transform:translateY(-50%) scale(1);transition:all .45s cubic-bezier(.2,1.7,.4,1)}
+#cele .msg .t{font-size:min(16vmin,130px);font-weight:900;color:#ef4444;letter-spacing:.06em;text-shadow:0 0 6px #000,0 6px 0 #450a0a,0 0 40px rgba(239,68,68,.95)}
+#cele .msg .nm{font-size:min(6vmin,40px);font-weight:900;color:#fff;text-shadow:0 2px 8px #000}
+#cele .msg .no{font-size:min(3.6vmin,20px);font-weight:800;color:#fecaca;text-shadow:0 2px 6px #000}
+#cele .close{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:6;font-family:inherit;font-size:16px;font-weight:900;padding:10px 26px;border-radius:999px;border:0;background:rgba(255,255,255,.92);color:#1a1033;cursor:pointer}
+/* PASS = 휴~ 살았다 */
+#lose{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:radial-gradient(circle,rgba(20,83,45,.6),rgba(8,4,20,.85) 70%);text-align:center}
 #lose.show{display:flex}
-#lose .e{font-size:96px;animation:droop 1.6s ease-in-out}
-#lose .t{font-size:clamp(40px,8vw,80px);font-weight:900;color:#c9c2e6}
-#lose .s{font-size:17px;color:#e9e4ff}
-@keyframes droop{0%{transform:scale(.3)}40%{transform:scale(1.1)}100%{transform:scale(1) rotate(-8deg) translateY(10px)}}
+#lose .e{font-size:110px;animation:passpop .7s cubic-bezier(.2,1.7,.4,1)}
+#lose .t{font-size:clamp(54px,11vw,120px);font-weight:900;color:#4ade80;letter-spacing:.08em;text-shadow:0 0 30px rgba(74,222,128,.8),0 5px 0 #14532d}
+#lose .s{font-size:19px;color:#dcfce7;font-weight:800}
+@keyframes passpop{0%{transform:scale(.2) rotate(-30deg)}100%{transform:none}}
 canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f1640;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;opacity:0;transition:opacity .3s;z-index:70;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
@@ -104,7 +111,7 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
 <body>
 <canvas id="fx"></canvas>
 <div class="wrap">
-  <header><a href="/">← 처음으로</a><h1>🎺 카드 뽑기</h1><button class="snd" id="snd" type="button">🔊 소리 켜짐</button></header>
+  <header><a href="/">← 처음으로</a><a href="/pinball">🎱 핀볼 추첨으로</a><h1>🐊 카드 뽑기 <small style="font-size:.5em;-webkit-text-fill-color:#a5f3fc">PASS or 당첨</small></h1><button class="snd" id="snd" type="button">🔊 소리 켜짐</button></header>
   <div id="setupBox"></div>
   <div class="stat" id="stat"></div>
   <div class="who" id="whoBox"></div>
@@ -148,6 +155,14 @@ function fanfare(t0=0){ // 따다다 따~ 따다 따아~ (C장조 팡파르)
   const t2=t0+3*q+.6+2*q+1.0;[[72,0,q],[76,q,q],[79,2*q,q],[84,3*q,1.3]].forEach(([m,t,d])=>{brass(N(m),t2+t,d,.24);brass(N(m-7),t2+t,d,.12);brass(N(m-12),t2+t,d,.12)});
   for(let k=0;k<6;k++)noise(t2+3*q+k*.18,.25,.5);
 }
+function growl(sec=1.1){const a=ac();if(!a||!soundOn)return;const t=a.currentTime,g=a.createGain(),lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32,t+.25);g.gain.setValueAtTime(.32,t+sec-.2);g.gain.exponentialRampToValueAtTime(.0005,t+sec);
+  const am=a.createOscillator(),ag=a.createGain();am.frequency.value=11;ag.gain.value=.16;am.connect(ag);ag.connect(g.gain);
+  [52,78,104].forEach((f,i)=>{const o=a.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f*1.25,t+sec);o.detune.value=i*9;o.connect(lp);o.start(t);o.stop(t+sec+.05)});
+  am.start(t);am.stop(t+sec);lp.connect(g);g.connect(a.destination)}
+function chomp(){const a=ac();if(!a||!soundOn)return;const t=a.currentTime;noise(0,.12,1.4,3500);noise(0,.35,1.2,260);
+  const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.setValueAtTime(95,t);o.frequency.exponentialRampToValueAtTime(32,t+.45);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.55)}
+function passDing(){const a=ac();if(!a||!soundOn)return;[[880,0],[1318,.12],[1760,.24]].forEach(([f,d])=>{const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+d;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.55)})}
 function sadTrombone(){[[58,0,.38],[57,.4,.38],[56,.8,.38],[55,1.2,1.1]].forEach(([m,t,d])=>brass(N(m-12),t,d,.2))}
 $('#snd').textContent=soundOn?'🔊 소리 켜짐':'🔇 소리 꺼짐';
 $('#snd').addEventListener('click',()=>{soundOn=!soundOn;LS.set('lottery-sound',soundOn?'1':'0');$('#snd').textContent=soundOn?'🔊 소리 켜짐':'🔇 소리 꺼짐';if(soundOn){ac();brass(N(72),0,.25)}});
@@ -162,6 +177,8 @@ const fx=(()=>{const c=$('#fx'),x=c.getContext('2d');let P=[],run=false;const CO
     x.globalAlpha=1;if(P.length)requestAnimationFrame(loop);else run=false}
   const go=()=>{if(!run){run=true;loop()}};
   return{
+    blood(n){for(let i=0;i<n;i++)P.push({x:innerWidth*(.1+Math.random()*.8),y:innerHeight*(.42+Math.random()*.16),vx:(Math.random()-.5)*6,vy:(Math.random()-.3)*6,g:.35,dr:.99,s:5+Math.random()*9,c:['#7f1d1d','#b91c1c','#dc2626','#450a0a'][i%4],l:120+Math.random()*60,r:Math.random()*6,vr:(Math.random()-.5)*.2});go()},
+    burst(n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=4+Math.random()*9;P.push({x:innerWidth/2,y:innerHeight/2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:.2,dr:.98,s:6+Math.random()*7,c:['#4ade80','#86efac','#bbf7d0','#fff'][i%4],l:80+Math.random()*40,r:Math.random()*6,vr:(Math.random()-.5)*.4})}go()},
     cannon(n){for(let i=0;i<n;i++){const left=i%2===0;P.push({x:left?0:innerWidth,y:innerHeight*.85,vx:(left?1:-1)*(6+Math.random()*12),vy:-(12+Math.random()*12),g:.32,dr:.99,s:8+Math.random()*10,c:COLS[i%COLS.length],l:150+Math.random()*80,r:Math.random()*6,vr:(Math.random()-.5)*.4})}go()},
     rain(n){for(let i=0;i<n;i++)P.push({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.6,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,g:.05,dr:1,s:7+Math.random()*9,c:COLS[i%COLS.length],l:220+Math.random()*80,r:Math.random()*6,vr:(Math.random()-.5)*.3});go()},
     firework(x0,y0){const col=COLS[(Math.random()*COLS.length)|0];for(let i=0;i<70;i++){const a=Math.PI*2*i/70,sp=3+Math.random()*5;P.push({x:x0,y:y0,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:.06,dr:.97,s:2+Math.random()*2.5,c:col,l:60+Math.random()*40,spark:1,r:0,vr:0})}go()},
@@ -169,26 +186,34 @@ const fx=(()=>{const c=$('#fx'),x=c.getContext('2d');let P=[],run=false;const CO
   };
 })();
 
-/* ---------- 당첨 · 꽝 연출 ---------- */
+/* ---------- 당첨 = 악어 · PASS = 통과 연출 ---------- */
 let celeQ=[],celeOn=false;
+function teethSVG(dir){ // dir: 1 = 위턱(아래로 뻗은 이빨), -1 = 아래턱
+  const n=19,w=1000/n;let pts='',grad=`<defs><linearGradient id="tg${dir}" x1="0" y1="${dir>0?0:1}" x2="0" y2="${dir>0?1:0}"><stop offset="0" stop-color="#d6cfae"/><stop offset=".55" stop-color="#fffdf2"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>`;
+  for(let i=0;i<n;i++){const big=(i%3===1)?1:(.55+Math.random()*.25),x=i*w,h=96*big;
+    pts+=dir>0?`<polygon points="${x+2},0 ${x+w-2},0 ${x+w*.5+(Math.random()-.5)*8},${h}" fill="url(#tg${dir})" stroke="#8a826a" stroke-width="2"/>`
+              :`<polygon points="${x+2},96 ${x+w-2},96 ${x+w*.5+(Math.random()-.5)*8},${96-h}" fill="url(#tg${dir})" stroke="#8a826a" stroke-width="2"/>`}
+  return `<svg class="teeth" viewBox="0 0 1000 96" preserveAspectRatio="none">${grad}${pts}</svg>`;
+}
 function celebrate(i,who){celeQ.push({i,who});if(!celeOn)nextCele()}
 function nextCele(){
   const c=celeQ.shift();if(!c){celeOn=false;return}celeOn=true;
   const el=$('#cele');
-  el.innerHTML=`<div class="rays"></div><div class="flash"></div><div class="side l">🎺</div><div class="side r">🎺</div>
-    <div class="big"><div class="tr">🎺</div><div class="t">당첨!</div>${c.who?`<div class="nm">${esc(c.who)}</div>`:''}<div class="no">${c.i+1}번 카드</div></div>
-    <div class="cap">🎉 축하합니다! 🎉</div><button class="close" type="button" id="celeX">닫기</button>`;
-  el.classList.add('show');
-  fanfare(.15);fx.cannon(260);setTimeout(()=>fx.cannon(200),700);setTimeout(()=>fx.rain(260),300);fx.emoji(['🎺','🎉','✨','🏆','💛'],40);
-  for(let k=0;k<12;k++)setTimeout(()=>fx.firework(innerWidth*(.15+Math.random()*.7),innerHeight*(.12+Math.random()*.45)),400+k*420);
-  setTimeout(()=>fx.emoji(['🎺','🎊','⭐'],30),2200);
-  if(navigator.vibrate)navigator.vibrate([150,80,150,80,400]);
-  clearTimeout(nextCele.h);nextCele.h=setTimeout(closeCele,9000);
+  el.className='';el.innerHTML=`<div class="dark"></div><div class="jaw top"><div class="eye l"></div><div class="eye r"></div>${teethSVG(1)}</div><div class="jaw bot">${teethSVG(-1)}</div>
+    <div class="blood"></div><div class="msg"><div class="t">🐊 당첨!</div>${c.who?`<div class="nm">${esc(c.who)}님 꿀꺽…</div>`:''}<div class="no">${c.i+1}번 카드</div></div>
+    <button class="close" type="button" id="celeX">닫기</button>`;
+  el.classList.add('show');void el.offsetWidth;
+  growl(1.15);
+  requestAnimationFrame(()=>el.classList.add('s1'));                  // 입을 쩍 벌리고 다가옴
+  clearTimeout(nextCele.h1);clearTimeout(nextCele.h2);clearTimeout(nextCele.h3);
+  nextCele.h1=setTimeout(()=>{el.classList.add('s2','shake');chomp();fx.blood(160);if(navigator.vibrate)navigator.vibrate([60,40,300])},1150);   // 덥석!
+  nextCele.h2=setTimeout(()=>{el.classList.remove('shake');el.classList.add('s3');growl(.6)},1900);                                                 // 살짝 벌려서 결과 공개
+  nextCele.h=setTimeout(closeCele,8000);
 }
-function closeCele(){clearTimeout(nextCele.h);$('#cele').classList.remove('show');$('#cele').innerHTML='';setTimeout(nextCele,250)}
-function showLose(i,who){
-  const el=$('#lose');el.innerHTML=`<div class="e">😅</div><div class="t">꽝</div><div class="s">${who?esc(who)+' · ':''}${i+1}번 카드 — 다음 기회에!</div>`;
-  el.classList.add('show');sadTrombone();if(navigator.vibrate)navigator.vibrate(80);
+function closeCele(){clearTimeout(nextCele.h);clearTimeout(nextCele.h1);clearTimeout(nextCele.h2);const el=$('#cele');el.className='';el.innerHTML='';setTimeout(nextCele,250)}
+function showLose(i,who){ // PASS
+  const el=$('#lose');el.innerHTML=`<div class="e">✅</div><div class="t">PASS</div><div class="s">${who?esc(who)+'님 · ':''}${i+1}번 카드 — 휴~ 살았다!</div>`;
+  el.classList.add('show');passDing();fx.burst(80);if(navigator.vibrate)navigator.vibrate(60);
   clearTimeout(showLose.h);showLose.h=setTimeout(()=>el.classList.remove('show'),2600);
 }
 $('#lose').addEventListener('click',()=>$('#lose').classList.remove('show'));
@@ -209,7 +234,7 @@ function renderSetup(){
       <button class="btn gold" id="sGo" type="button">🔀 카드 섞고 시작</button>
       <button class="btn" id="sReveal" type="button">남은 카드 모두 공개</button>
       <button class="btn" id="sQr" type="button">📱 휴대폰 QR</button>
-      <button class="btn" id="sTest" type="button">🎺 당첨 연출 미리보기</button>
+      <button class="btn" id="sTest" type="button">🐊 당첨 연출 미리보기</button>
     </div>
     <div class="qr" id="qrWrap" hidden><div id="qr"></div><div class="u" id="qrUrl"></div></div></details>`;
   $('#sNames').addEventListener('input',e=>{const n=e.target.value.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);if(n.length)$('#sTotal').value=new Set(n).size});
@@ -228,19 +253,19 @@ function render(){
   if(!L)return;
   renderSetup();renderWho();
   const mine=HOST?null:LS.get(myKey());
-  $('#stat').innerHTML=`<span>참여 <b>${L.total}</b>명</span><span>🎺 당첨 <b>${L.winners}</b>명</span><span>남은 당첨 <b>${L.winnersLeft}</b></span><span>뽑은 카드 <b>${L.openedCount}</b> / ${L.total}</span>`;
+  $('#stat').innerHTML=`<span>참여 <b>${L.total}</b>명</span><span>🐊 당첨 <b>${L.winners}</b>명</span><span>✅ PASS <b>${L.total-L.winners}</b>명</span><span>남은 당첨 <b>${L.winnersLeft}</b></span><span>뽑은 카드 <b>${L.openedCount}</b> / ${L.total}</span>`;
   const mc=mine!=null?L.cards[+mine]:null;
-  $('#mine').textContent=L.openedCount>=L.total?'카드를 모두 뽑았어요!':mc&&mc.opened?`내 카드: ${+mine+1}번 · ${mc.win?'🎺 당첨!':'꽝'}`:HOST?'진행자 화면: 한 사람씩 나와서 카드를 눌러 뽑아요':'카드를 한 장 골라 눌러 보세요!';
+  $('#mine').textContent=L.openedCount>=L.total?'카드를 모두 뽑았어요!':mc&&mc.opened?`내 카드: ${+mine+1}번 · ${mc.win?'🐊 당첨!':'✅ PASS'}`:HOST?'진행자 화면: 한 사람씩 나와서 카드를 눌러 뽑아요':'카드를 한 장 골라 눌러 보세요!';
   const locked=mine!=null;
   const sig=JSON.stringify([L.round,L.cards,locked,mine]);
   if(sig!==lastGrid){lastGrid=sig;
     $('#grid').style.setProperty('--cw',L.total<=8?'170px':L.total<=16?'130px':L.total<=30?'108px':'84px');
     $('#grid').innerHTML=L.cards.map(c=>`<button class="card${c.opened?' flip '+(c.win?'win':'lose'):''}${locked?' locked':''}${mine!=null&&+mine===c.i?' mine-card':''}" data-i="${c.i}" type="button"${c.opened||locked?' disabled':''}>
       <div class="in"><div class="f"><div class="q">?</div><div class="n">${c.i+1}</div></div>
-      <div class="b"><div class="ic">${c.opened?(c.win?'🎺':'😅'):''}</div><div class="r">${c.opened?(c.win?'당첨!':'꽝'):''}</div><div class="w">${esc(c.who||(c.i+1)+'번')}</div></div></div></button>`).join('');
+      <div class="b"><div class="ic">${c.opened?(c.win?'🐊':'✅'):''}</div><div class="r">${c.opened?(c.win?'당첨!':'PASS'):''}</div><div class="w">${esc(c.who||(c.i+1)+'번')}</div></div></div></button>`).join('');
   }
 }
-// 다른 기기(휴대폰)에서 뽑은 당첨도 큰 화면에서 같이 축하
+// 다른 기기(휴대폰)에서 나온 당첨도 큰 화면에서 같이 악어 연출
 function detect(){
   if(!L)return;const now=new Map(L.cards.filter(c=>c.opened).map(c=>[c.i,c]));
   if(HOST&&seen&&seen.round===L.round)for(const [i,c] of now)if(!seen.set.has(i)&&i!==myOpen&&c.win)celebrate(i,c.who);

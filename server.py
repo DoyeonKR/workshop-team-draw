@@ -37,6 +37,7 @@ VOTE = os.path.join(BASE, "vote.html")  # 특별상 투표 화면 (비밀번호 
 MVP = os.path.join(BASE, "mvp.html")  # 참여왕 투표 (휴대폰, 비밀번호 없음, 투표만 가능)
 STAY = os.path.join(BASE, "stay.html")  # 남겠다/집에 가겠다 투표 (휴대폰, 비밀번호 없음)
 MENU = os.path.join(BASE, "menu.html")  # 2차 메뉴 입력 (휴대폰, 이름 없이 바로 입력)
+PINBALL = os.path.join(BASE, "pinball.html")  # 핀볼 추첨: 공이 긴 코스를 굴러 먼저 도착한 순서대로 당첨 (진행자 화면에서만 돌아감)
 LOTTERY = os.path.join(BASE, "lottery.html")  # 카드 뽑기(제비뽑기): 큰 화면·휴대폰 겸용, 설정은 관리자만
 TIMETABLE = os.path.join(BASE, "timetable.html")  # 전체화면 타임테이블 (비밀번호 없음)
 
@@ -1486,6 +1487,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             except FileNotFoundError:
                 return self._send(500, "stay.html 이 없습니다".encode(), "text/plain; charset=utf-8")
+        if u.path in ("/pinball", "/pinball.html", "/marble"):
+            try:
+                with open(PINBALL, "rb") as f:
+                    return self._send(200, f.read(), "text/html; charset=utf-8")
+            except FileNotFoundError:
+                return self._send(500, "pinball.html 이 없습니다".encode(), "text/plain; charset=utf-8")
         if u.path in ("/lottery", "/lottery.html", "/card", "/draw"):
             try:
                 with open(LOTTERY, "rb") as f:
