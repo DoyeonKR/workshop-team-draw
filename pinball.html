@@ -80,6 +80,8 @@ h1{margin:0;font-size:clamp(22px,2.8vw,36px);font-weight:900;background:linear-g
 .slowtag{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:18px;font-weight:900;color:#fde68a;padding:6px 16px;border-radius:999px;background:rgba(0,0,0,.6);border:1px solid rgba(251,191,36,.6);opacity:0;transition:opacity .3s;pointer-events:none}
 .stage.slow .slowtag{opacity:1;animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:translateX(-50%) scale(1.08)}}
+.viewnote{margin:8px 0;padding:10px 14px;border-radius:14px;border:1px solid rgba(253,230,138,.5);background:rgba(253,230,138,.08);color:#fde68a;font-weight:800;font-size:14px}
+.viewnote[hidden]{display:none}
 canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
 @media(max-width:900px){.side{display:none}}
 </style>
@@ -89,7 +91,8 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
 <div class="app">
   <header><a href="/">← 처음으로</a><h1>🎱 핀볼 추첨</h1>
     <button class="hbtn" id="cam" type="button">🎥 선두 따라가기</button><button class="hbtn" id="spd" type="button">⏩ 1배속</button><button class="hbtn" id="snd" type="button">🔊 소리 켜짐</button></header>
-  <details class="setup" id="setup" open><summary>⚙ 게임 설정 — 참여 인원 · 당첨 인원 (먼저 바닥에 도착한 순서대로 당첨)</summary>
+  <div class="viewnote" id="viewnote">👀 보기 전용 화면이에요. 핀볼 추첨은 관리자 화면(/admin)에서 시작해요.</div>
+  <details class="setup" id="setup" open hidden><summary>⚙ 게임 설정 — 참여 인원 · 당첨 인원 (먼저 바닥에 도착한 순서대로 당첨)</summary>
     <div class="row">
       <label>참여 인원<input id="sTotal" type="number" min="2" max="100" value="10"></label>
       <label>당첨 인원<input id="sWin" type="number" min="1" max="99" value="2"></label>
@@ -454,6 +457,9 @@ $('#cam').addEventListener('click',()=>{camI=(camI+1)%CAMS.length;camMode=CAMS[c
 const SPEEDS=[1,2,4];let spI=0;
 $('#spd').addEventListener('click',()=>{spI=(spI+1)%SPEEDS.length;speed=SPEEDS[spI];$('#spd').textContent=`⏩ ${speed}배속`});
 fit();prepare();raf=requestAnimationFrame(frame);
+// 설정·출발은 관리자 화면에서 연 경우에만 (관리자 토큰 확인)
+(async()=>{let ok=false;try{const tk=localStorage.getItem('qe-admin-token');if(tk){const j=await (await fetch('/api/admincheck?token='+encodeURIComponent(tk),{cache:'no-store'})).json();ok=!!j.admin}}catch(e){}
+  $('#setup').hidden=!ok;$('#viewnote').hidden=ok;setTimeout(fit,50)})();
 // 검증용: 공 위치 보기 / 정해진 시간만큼 돌리기
 window.__peek=()=>({FINISH,labels:zones.map(z=>[z.t,Math.round(z.y0)]),balls:balls.map(b=>[b.nm,Math.round(b.x),Math.round(b.y),b.done])});
 window.__run=(names,sec)=>{quietSim=true;winnersN=2;buildCourse();makeBalls(names);gateOn=false;finished=[];raceT=0;const q=soundOn;soundOn=false;while(raceT<sec)step();soundOn=q;quietSim=false;return window.__peek()};

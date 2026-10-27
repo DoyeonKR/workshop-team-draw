@@ -289,9 +289,16 @@ section.pane.on{display:block;animation:fadein .3s}
 /* 빔프로젝터처럼 세로가 낮은 화면: 시상대·표를 줄여 최종 랭킹이 한 화면에 들어오게 */
 @media(max-height:820px){.pod{min-height:120px;padding:10px 8px;gap:4px}.pod.p1{min-height:165px}.pod.p2{min-height:140px}.pod.p3{min-height:118px}
   .pod .medal{font-size:36px}.podium{margin:0 0 10px}#pane-final .row{margin-bottom:8px!important}#pane-final .rtable th,#pane-final .rtable td{padding:6px 8px}}
+/* 보기 전용(관리자 아님): 진행·설정 버튼 숨김 — 진행은 관리자 화면(/admin)에서 */
+body.viewer [data-r],body.viewer [data-fin],body.viewer [data-v],body.viewer [data-m],body.viewer [data-s],body.viewer [data-n],body.viewer [data-ndel],
+body.viewer [data-q],body.viewer [data-tool],body.viewer #tools,body.viewer details.cfg,body.viewer #bFinish,body.viewer #bReset,body.viewer #allReset,
+body.viewer #rv0,body.viewer #rv1,body.viewer #rv2,body.viewer #rv3,body.viewer .ctl,body.viewer .fin button,body.viewer #vStage button,body.viewer .vname,body.viewer .vcand{display:none!important}
+body.viewer .bcell,body.viewer #cv,body.viewer .fb{pointer-events:none}
+.viewtag{display:none;font-size:12px;font-weight:800;color:#fde68a;padding:5px 10px;border-radius:999px;border:1px solid rgba(253,230,138,.5);background:rgba(253,230,138,.08)}
+body.viewer .viewtag{display:inline-block}
 </style>
 </head>
-<body>
+<body class="viewer">
 <canvas id="bgfx"></canvas>
 <div class="wrap">
   <header class="gh">
@@ -302,6 +309,7 @@ section.pane.on{display:block;animation:fadein .3s}
     <a class="btn" href="/pinball">🎱 핀볼 추첨</a>
     <button class="btn fsbtn" id="fsBtn" type="button">⛶ 전체화면</button>
     <span class="conn" id="conn">연결 중…</span>
+    <span class="viewtag">👀 보기 전용 · 진행은 관리자 화면(/admin)에서</span>
     <div class="strip" id="strip"></div>
   </header>
   <nav class="tabs" id="tabs">
@@ -525,8 +533,13 @@ const medal=r=>['','🥇','🥈','🥉'][r]||'';
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const secTxt=s=>s%60===0?`${s/60}분`:s>60?`${Math.floor(s/60)}분 ${s%60}초`:`${s}초`;
 const typing=e=>e.target.closest&&e.target.closest('input,textarea,select');
+// 관리자 토큰(관리자 화면 /admin 에서 비밀번호로 받음)이 맞을 때만 진행·설정 가능
+let ADMIN_TK=null;try{ADMIN_TK=localStorage.getItem('qe-admin-token')}catch(e){}
+let IS_ADMIN=false;
+(async()=>{if(!ADMIN_TK)return;try{const j=await (await fetch('/api/admincheck?token='+encodeURIComponent(ADMIN_TK),{cache:'no-store'})).json();IS_ADMIN=!!j.admin}catch(e){}
+  document.body.classList.toggle('viewer',!IS_ADMIN);if(typeof keys!=='undefined')for(const k in keys)keys[k]='';if(typeof render==='function')render()})();
 async function api(path,body){
-  const h={'X-Game-Token':window.__GT||''};if(body)h['Content-Type']='application/json';
+  const h={'X-Game-Token':window.__GT||'','X-Admin-Token':ADMIN_TK||''};if(body)h['Content-Type']='application/json';
   const r=await fetch(path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined,cache:'no-store'});
   if(r.status===401){location.reload();throw new Error('비밀번호를 다시 입력해 주세요')}
   let j={};try{j=await r.json()}catch(e){}
@@ -534,6 +547,7 @@ async function api(path,body){
   return j;
 }
 async function act(game,action,data){
+  if(!IS_ADMIN){toast('관리자 화면(/admin)에서만 진행할 수 있어요');return null}
   const lv=(action==='correct'||action==='pass')&&G&&G[game]&&G[game].live;
   if(lv&&typeof lv.wseq==='number')data=Object.assign({wseq:lv.wseq},data||{});  // 휴대폰과 동시에 눌러도 한 번만
   try{const j=await api('/api/game',Object.assign({game,action},data||{}));if(j.g)applyG(j.g);if(j.msg)toast(j.msg);return j}

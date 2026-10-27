@@ -37,6 +37,7 @@ VOTE = os.path.join(BASE, "vote.html")  # 특별상 투표 화면 (비밀번호 
 MVP = os.path.join(BASE, "mvp.html")  # 참여왕 투표 (휴대폰, 비밀번호 없음, 투표만 가능)
 STAY = os.path.join(BASE, "stay.html")  # 남겠다/집에 가겠다 투표 (휴대폰, 비밀번호 없음)
 MENU = os.path.join(BASE, "menu.html")  # 2차 메뉴 입력 (휴대폰, 이름 없이 바로 입력)
+ADMIN_PAGE = os.path.join(BASE, "admin.html")  # 관리자 화면 (비밀번호 ADMIN_PASSWORD)
 PINBALL = os.path.join(BASE, "pinball.html")  # 핀볼 추첨: 공이 긴 코스를 굴러 먼저 도착한 순서대로 당첨 (진행자 화면에서만 돌아감)
 LOTTERY = os.path.join(BASE, "lottery.html")  # 카드 뽑기(제비뽑기): 큰 화면·휴대폰 겸용, 설정은 관리자만
 TIMETABLE = os.path.join(BASE, "timetable.html")  # 전체화면 타임테이블 (비밀번호 없음)
@@ -54,7 +55,8 @@ ROSTER = [
 ]
 # 본명이 여기 있으면 무조건 리더팀 (이 5명만 리더팀)
 LEADERS = ["참가자01", "참가자04", "참가자07", "참가자03", "참가자02"]
-ADMIN = "사회자"  # 사회자. 본명에서 고르면 관리자 화면으로 들어간다 (추첨·총원에는 포함 안 함)
+ADMIN = "사회자"  # 사회자(진행자). 추첨·총원에는 포함 안 함. 관리는 /admin 에서 비밀번호로
+ADMIN_PASSWORD = "0000"  # 관리자 화면(/admin) 비밀번호 — 모든 관리 기능은 여기서만 (2026-10-27)
 GOAL = 18  # 추첨 총원(사회자 제외)
 LEADER_EXTRA = 1  # 고정 리더팀 외에 나머지 사람 중 랜덤으로 리더팀에 들어가는 인원
 L_SIZE = len(LEADERS) + LEADER_EXTRA  # 리더팀 인원 (6) → 1·2팀 = 총원 - 리더팀 = 12 (6/6)
@@ -571,7 +573,8 @@ def lottery_action(a, b, admin):
         print(f"[{time.strftime('%H:%M:%S')}] 카드 뽑기 {i + 1}번: {'당첨' if win else '꽝'}"
               f"{' (' + clean(b.get('who')) + ')' if clean(b.get('who')) else ''}")
         return {"idx": i, "win": win}
-    # 설정·전체 공개는 진행자 큰 화면에서만 보이게 하고 따로 로그인은 받지 않는다 (2026-10-27 사용자 요청)
+    if not admin:  # 설정·전체 공개는 관리자 화면에서만
+        raise Bad("관리자 화면에서만 할 수 있어요")
     if a == "setup":  # 참여 인원(또는 명단)·당첨 수를 정하고 새로 섞기
         names = []
         for n in re.split(r"[\n,]+", str(b.get("names") or "")):
@@ -1487,6 +1490,14 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             except FileNotFoundError:
                 return self._send(500, "stay.html 이 없습니다".encode(), "text/plain; charset=utf-8")
+        if u.path in ("/admin", "/admin.html"):
+            try:
+                with open(ADMIN_PAGE, "rb") as f:
+                    return self._send(200, f.read(), "text/html; charset=utf-8")
+            except FileNotFoundError:
+                return self._send(500, "admin.html 이 없습니다".encode(), "text/plain; charset=utf-8")
+        if u.path == "/api/admincheck":  # 각 화면이 관리자 모드로 열렸는지 확인
+            return self._json(200, {"admin": admin})
         if u.path in ("/pinball", "/pinball.html", "/marble"):
             try:
                 with open(PINBALL, "rb") as f:
@@ -1640,12 +1651,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(200, {"ok": True, "ticket": ticket, "page": page})
                 time.sleep(0.6)  # 연속 대입 늦추기
                 return self._json(401, {"error": "비밀번호가 틀렸어요"})
-            if u.path == "/api/adminlogin":  # 관리자 이름만 확인해서 토큰 발급 (팀 뽑기에는 아무 영향 없음)
-                if norm(b.get("name")) and norm(b.get("name")) == norm(ADMIN):
+            if u.path == "/api/adminlogin":  # 관리자 화면 비밀번호 확인 → 관리자 토큰
+                if secrets.compare_digest(str(b.get("password") or ""), ADMIN_PASSWORD):
                     print(f"[{time.strftime('%H:%M:%S')}] 관리자 입장 ({self.client_address[0]})")
                     return self._json(200, {"ok": True, "token": ADMIN_TOKEN})
-                time.sleep(0.6)
-                return self._json(403, {"error": "관리자 이름이 아니에요"})
+                time.sleep(0.6)  # 연속 대입 늦추기
+                return self._json(403, {"error": "비밀번호가 틀렸어요"})
             if u.path == "/api/lottery":  # 카드 뒤집기는 누구나, 설정(전체·당첨 수)·전체 공개는 관리자만
                 with cond:
                     res = lottery_action(b.get("action"), b, self._is_admin(b.get("token")))
@@ -1675,7 +1686,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(200, {"ok": True, "msg": msg})
             if u.path in ("/api/game", "/api/stroke", "/api/word") and not self._game_ok(parse_qs(u.query)):
                 return self._json(401, {"error": "게임 비밀번호가 필요합니다"})
-            if u.path == "/api/game":  # 비밀번호(쿠키) 통과한 진행자 화면만
+            if u.path == "/api/game":  # 게임 진행·설정은 관리자만 (관리자 화면에서 연 게임 화면)
+                if not self._is_admin(self.headers.get("X-Admin-Token") or b.get("token")):
+                    return self._json(403, {"error": "관리자 화면에서만 진행할 수 있어요"})
                 with cond:
                     games_tick()
                     msg = game_action(b)
@@ -1729,8 +1742,7 @@ class Handler(BaseHTTPRequestHandler):
             raise Bad("아래 명단에서 본명을 선택해 주세요")
         self_draw = bool(b.get("selfDraw"))
         if norm(real) == norm(ADMIN) and not self_draw:
-            print(f"[{time.strftime('%H:%M:%S')}] 관리자 입장 ({self.client_address[0]})")
-            return {"status": "admin", "token": ADMIN_TOKEN}
+            raise Bad("사회자는 추첨하지 않아요. 관리는 관리자 화면(/admin)에서 해 주세요")
         if self_draw and not self._is_admin(b.get("token")):
             raise Bad("관리자 인증이 필요합니다")
         nick = clean(b.get("name"))

@@ -127,7 +127,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
 // 진행자 큰 화면(노트북·빔프로젝터) = 넓은 화면 또는 주소에 ?host. 설정 칸은 여기서만 보이고, 여러 사람이 차례로 뽑을 수 있다
-const HOST=innerWidth>=900||/[?&]host\b/.test(location.search);
+// 진행자 모드 = 관리자 화면(/admin)에서 비밀번호로 받은 토큰이 있을 때. 설정 칸은 여기서만 보이고, 여러 사람이 차례로 뽑을 수 있다
+let ADMIN_TK=null;try{ADMIN_TK=localStorage.getItem('qe-admin-token')}catch(e){}
+let HOST=false;
 let L=null,busy=false,lastGrid='',seen=null,myOpen=null,soundOn=LS.get('lottery-sound')!=='0';
 const myKey=()=>L?'lottery-pick-r'+L.round:'';
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
@@ -275,7 +277,7 @@ async function load(){
   try{const r=await fetch('/api/lottery',{cache:'no-store'});L=await r.json();detect();render()}catch(e){$('#stat').innerHTML='<span>서버 연결 중…</span>'}
 }
 async function post(body){
-  const r=await fetch('/api/lottery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r=await fetch('/api/lottery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token:ADMIN_TK},body))});
   const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'다시 시도해 주세요');if(j.l){L=j.l}return j;
 }
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -313,7 +315,8 @@ async function drawQr(){
   if(!window.QRCode)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)}).catch(()=>{});
   if(window.QRCode){$('#qr').innerHTML='';new QRCode($('#qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}
 }
-load();setInterval(()=>{if(!busy)load()},1200);
+(async()=>{if(ADMIN_TK){try{const j=await (await fetch('/api/admincheck?token='+encodeURIComponent(ADMIN_TK),{cache:'no-store'})).json();HOST=!!j.admin}catch(e){}}
+  load();setInterval(()=>{if(!busy)load()},1200)})();
 })();
 </script>
 </body>

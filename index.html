@@ -388,6 +388,7 @@ footer{margin-top:36px;text-align:center;color:var(--muted);font-size:12px}
     <a class="gamelink votelink" href="/vote">🗳 특별상 투표</a>
     <a class="gamelink votelink" href="/lottery">🃏 카드 뽑기</a>
     <a class="gamelink votelink" href="/pinball">🎱 핀볼 추첨</a>
+    <a class="gamelink" href="/admin" style="background:rgba(255,255,255,.1);color:#e9e4ff;animation:none;box-shadow:none;border:1px solid rgba(255,255,255,.25)">⚙ 관리자</a>
     <a class="gamelink ttlink" href="/timetable" data-ttfs="1">🗓 타임테이블 전체화면</a>
     <a class="gamelink qrlink" href="#" id="qrBtn">📱 휴대폰 접속 QR</a>
     <br><div class="badge"><b id="dday"></b> · 2026.10.23 QE 합동 워크샾</div>
@@ -682,7 +683,7 @@ async function saveTeamName(t,name,lt){
 let S={total:10,targets:{'1':5,'2':5},leaderTotal:5,members:[],roster:[],admin:false,remaining:null,adminName:'사회자'};
 let token=null,isAdmin=false,lastNew=null,busy=false,connected=false,loaded=false,picked=null;
 const myIds=new Set(),mine={};
-try{token=sessionStorage.getItem(KEY+':token')}catch(e){}
+try{token=localStorage.getItem('qe-admin-token')}catch(e){}  // 관리자 화면(/admin)에서 비밀번호로 받은 토큰이 있을 때만 관리 기능이 보임
 isAdmin=!!token;
 const tq=()=>token?('?token='+encodeURIComponent(token)):'';
 const nn=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
@@ -705,10 +706,10 @@ function connect(){
   }
   pollT=setInterval(async()=>{if(Date.now()-esAt<20000)return;try{applyState(await api('/api/state'+tq()));setConn(true)}catch(e){setConn(false)}},2000);
 }
-function dropAdmin(msg){token=null;isAdmin=false;try{sessionStorage.removeItem(KEY+':token')}catch(e){}connect();render();if(msg)toast(msg)}
+function dropAdmin(msg){token=null;isAdmin=false;try{localStorage.removeItem('qe-admin-token')}catch(e){}connect();render();if(msg)toast(msg)}
 function applyState(st){
   if(!st||!Array.isArray(st.members))return;
-  if(isAdmin&&st.admin===false){S=st;dropAdmin('관리자 인증이 만료됐어요. 본명에서 사회자을 다시 선택해 주세요');return}
+  if(isAdmin&&st.admin===false){S=st;dropAdmin('관리자 인증이 만료됐어요. 관리자 화면(/admin)에서 다시 들어와 주세요');return}
   const prev=new Map(S.members.map(m=>[m.id,m]));
   if(loaded&&!busy){
     for(const m of st.members){
@@ -745,7 +746,7 @@ function renderRoster(){
     return `<button type="button" class="rname${sel?' sel':''}${r.drawn?' done':''}${r.host?' host':''}" data-name="${esc(r.name)}"${r.drawn?' disabled':''}>${esc(r.name)}${r.host?'<i>사회자·관리자</i>':''}${r.drawn?'<i>완료</i>':''}</button>`;
   }).join('')||'<span class="muted">명단을 불러오는 중…</span>';
   const isHost=picked&&nn(picked)===nn(S.adminName);
-  btn.textContent=isHost?'관리자 입장':'추첨하기';
+  btn.textContent=isHost?'관리자 화면으로 →':'추첨하기';
   $('#pickedTxt').innerHTML=picked?`선택한 본명: <b>${esc(picked)}</b>`:'아래에서 본명을 눌러 선택하세요';
 }
 function render(){
@@ -805,7 +806,6 @@ async function drawFor(nick,real,selfDraw){
   let drawnId=null;
   try{
     const j=await api('/api/draw',selfDraw?{name:nick,real,selfDraw:true,token}:{name:nick,real});
-    if(j.status==='admin'){token=j.token;isAdmin=true;picked=null;try{sessionStorage.setItem(KEY+':token',token)}catch(e){}connect();enterAdminFx();return true}
     if(j.status==='pending'){hint('이 이름으로 추첨 연출이 진행 중이에요. 잠시 후 다시 확인해 주세요.');return false}
     const m=j.member;drawnId=m.id;myIds.add(m.id);mine[m.id]=m;lastNew=m.id;
     if(!S.members.some(x=>x.id===m.id))S.members.push(Object.assign({},m,{pending:false}));
@@ -814,7 +814,7 @@ async function drawFor(nick,real,selfDraw){
     if(j.status==='new')await playDraw(m,j.mates,j.ltoken);else await playAlready(m,j.mates);
     return true;
   }catch(e){
-    if(selfDraw&&/인증/.test(e.message||''))dropAdmin('관리자 인증이 만료됐어요. 본명에서 사회자을 다시 선택해 주세요');
+    if(selfDraw&&/인증/.test(e.message||''))dropAdmin('관리자 인증이 만료됐어요. 관리자 화면(/admin)에서 다시 들어와 주세요');
     else hint(e.status?e.message:'서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해 주세요.');
     return false;
   }finally{
@@ -827,7 +827,8 @@ async function onDraw(){
   const nick=nameEl.value.trim().replace(/\s+/g,' ');
   const isHost=picked&&nn(picked)===nn(S.adminName);
   if(!picked){shakeEl($('#roster'));hint('아래 명단에서 본명을 선택해 주세요.');return}
-  if(!nick&&!isHost){shakeEl(nameEl);hint('재치있는 닉네임을 먼저 입력해 주세요.');nameEl.focus();return}
+  if(isHost){location.href='/admin';return}  // 사회자는 추첨하지 않고 관리자 화면으로
+  if(!nick){shakeEl(nameEl);hint('재치있는 닉네임을 먼저 입력해 주세요.');nameEl.focus();return}
   hint('');snd.unlock();
   await drawFor(nick,picked,false);
 }
@@ -848,7 +849,7 @@ $('#roster').addEventListener('click',e=>{
 /* ---------- 관리자 ---------- */
 async function adm(action,data){
   try{const j=await api('/api/admin',Object.assign({token,action},data||{}));if(j.state)applyState(j.state);if(j.msg)toast(j.msg);return j}
-  catch(e){if(e.status===403)dropAdmin('관리자 인증이 만료됐어요. 본명에서 사회자을 다시 선택해 주세요');else{alert(e.message);applyState(await api('/api/state'+tq()).catch(()=>null))}return null}
+  catch(e){if(e.status===403)dropAdmin('관리자 인증이 만료됐어요. 관리자 화면(/admin)에서 다시 들어와 주세요');else{alert(e.message);applyState(await api('/api/state'+tq()).catch(()=>null))}return null}
 }
 const findId=id=>S.members.find(m=>m.id===id);
 function resultText(){
