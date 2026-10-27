@@ -506,13 +506,15 @@ def menu_view():
 LOTTERY_MAX = 100  # 카드(전체 인원) 최대
 
 
-def new_lottery(total=10, winners=2, round_no=1):
-    """카드 total 장 중 winners 장이 당첨. 당첨 자리는 무작위로 섞어 둔다."""
+def new_lottery(total=10, winners=2, round_no=1, names=None):
+    """카드 total 장 중 winners 장이 당첨. 당첨 자리는 무작위로 섞어 둔다.
+    names 를 주면 참여자 명단으로 쓰고(인원 = 명단 수), 한 사람이 한 장만 뽑을 수 있다."""
     cards = [True] * winners + [False] * (total - winners)
     for i in range(len(cards) - 1, 0, -1):
         j = secrets.randbelow(i + 1)
         cards[i], cards[j] = cards[j], cards[i]
-    return {"total": total, "winners": winners, "cards": cards, "opened": {}, "round": round_no}
+    return {"total": total, "winners": winners, "cards": cards, "opened": {}, "round": round_no,
+            "names": list(names or [])}
 
 
 def sanitize_lottery(lt):
@@ -523,7 +525,8 @@ def sanitize_lottery(lt):
         opened = {str(int(k)): {"who": clean(v.get("who")), "at": int(v.get("at") or 0)}
                   for k, v in (lt.get("opened") or {}).items() if 0 <= int(k) < len(cards)}
         return {"total": len(cards), "winners": sum(cards), "cards": cards, "opened": opened,
-                "round": max(1, int(lt.get("round") or 1))}
+                "round": max(1, int(lt.get("round") or 1)),
+                "names": [clean(n) for n in (lt.get("names") or []) if clean(n)][:LOTTERY_MAX]}
     except (TypeError, ValueError, KeyError, AttributeError):
         return new_lottery()
 
@@ -536,9 +539,10 @@ def lottery_view(admin=False):
         # 안 뒤집은 카드의 당첨 여부는 관리자에게도 보내지 않음 (화면을 띄워 둔 노트북에서 들킬 수 있어서)
         cards.append({"i": i, "opened": bool(o), "win": win if o else None, "who": o["who"] if o else ""})
     won = sum(1 for c in cards if c["opened"] and c["win"])
+    drawn = [o["who"] for o in lt["opened"].values() if o.get("who")]
     return {"total": lt["total"], "winners": lt["winners"], "round": lt["round"], "cards": cards,
             "openedCount": len(lt["opened"]), "wonCount": won, "winnersLeft": lt["winners"] - won,
-            "admin": admin}
+            "names": lt.get("names") or [], "drawn": drawn, "admin": admin}
 
 
 def lottery_action(a, b, admin):
@@ -554,24 +558,36 @@ def lottery_action(a, b, admin):
             raise Bad("관리자가 카드를 새로 섞었어요. 다시 골라 주세요")
         if str(i) in lt["opened"]:
             raise Bad("이미 누가 뽑은 카드예요. 다른 카드를 골라 주세요")
-        lt["opened"][str(i)] = {"who": clean(b.get("who")), "at": now_ms()}
+        who = clean(b.get("who"))
+        if lt.get("names"):  # 명단이 있으면: 명단에 있는 사람만, 한 사람 한 장
+            who = next((n for n in lt["names"] if norm(n) == norm(who)), None)
+            if not who:
+                raise Bad("명단에서 내 이름을 먼저 골라 주세요")
+            if any(norm(o.get("who")) == norm(who) for o in lt["opened"].values()):
+                raise Bad(f"{who}님은 이미 뽑았어요")
+        lt["opened"][str(i)] = {"who": who, "at": now_ms()}
         win = lt["cards"][i]
         print(f"[{time.strftime('%H:%M:%S')}] 카드 뽑기 {i + 1}번: {'당첨' if win else '꽝'}"
               f"{' (' + clean(b.get('who')) + ')' if clean(b.get('who')) else ''}")
         return {"idx": i, "win": win}
-    if not admin:
-        raise Bad("관리자만 할 수 있어요")
-    if a == "setup":  # 전체 인원·당첨 수를 정하고 새로 섞기
+    # 설정·전체 공개는 진행자 큰 화면에서만 보이게 하고 따로 로그인은 받지 않는다 (2026-10-27 사용자 요청)
+    if a == "setup":  # 참여 인원(또는 명단)·당첨 수를 정하고 새로 섞기
+        names = []
+        for n in re.split(r"[\n,]+", str(b.get("names") or "")):
+            n = clean(n)
+            if n and all(norm(n) != norm(x) for x in names):
+                names.append(n)
         try:
-            total, winners = int(b.get("total")), int(b.get("winners"))
+            total = len(names) if names else int(b.get("total"))
+            winners = int(b.get("winners"))
         except (TypeError, ValueError):
-            raise Bad("전체 인원과 당첨 수는 숫자로 입력해 주세요")
+            raise Bad("참여 인원과 당첨 인원은 숫자로 입력해 주세요")
         if not 1 <= total <= LOTTERY_MAX:
             raise Bad(f"전체 인원은 1~{LOTTERY_MAX}명이에요")
         if not 0 <= winners <= total:
             raise Bad("당첨 수는 0명부터 전체 인원까지예요")
-        G()["lottery"] = new_lottery(total, winners, lt["round"] + 1)
-        return f"카드 {total}장 · 당첨 {winners}장으로 새로 섞었어요"
+        G()["lottery"] = new_lottery(total, winners, lt["round"] + 1, names)
+        return f"카드 {total}장 · 당첨 {winners}장으로 새로 섞었어요" + (f" (명단 {len(names)}명)" if names else "")
     if a == "reveal":  # 남은 카드 모두 공개
         for i in range(len(lt["cards"])):
             lt["opened"].setdefault(str(i), {"who": "", "at": now_ms()})
